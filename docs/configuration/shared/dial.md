@@ -4,10 +4,11 @@ icon: material/new-box
 
 !!! quote "Changes in sing-box 1.13.0"
 
-    :material-plus: [disable_tcp_keep_alive](#disable_tcp_keep_alive)  
-    :material-plus: [tcp_keep_alive](#tcp_keep_alive)  
-    :material-plus: [tcp_keep_alive_interval](#tcp_keep_alive_interval)  
-    :material-plus: [bind_address_no_port](#bind_address_no_port)
+	:material-plus: [disable_tcp_keep_alive](#disable_tcp_keep_alive)  
+	:material-plus: [tcp_keep_alive](#tcp_keep_alive)  
+	:material-plus: [tcp_keep_alive_interval](#tcp_keep_alive_interval)  
+	:material-plus: [bind_address_no_port](#bind_address_no_port)  
+	:material-plus: [proxy_protocol](#proxy_protocol)
 
 !!! quote "Changes in sing-box 1.12.0"
 
@@ -41,6 +42,7 @@ icon: material/new-box
   "tcp_keep_alive": "",
   "tcp_keep_alive_interval": "",
   "udp_fragment": false,
+  "proxy_protocol": 0,
 
   "domain_resolver": "", // or {}
   "network_strategy": "",
@@ -162,6 +164,22 @@ TCP keep alive interval.
 #### udp_fragment
 
 Enable UDP fragmentation.
+
+#### proxy_protocol
+
+!!! question "Since sing-box 1.13.0"
+
+Send Proxy Protocol on TCP connections.
+
+Supported values:
+
+- `false` or `0`: disable
+- `1`: send Proxy Protocol v1
+- `true` or `2`: send Proxy Protocol v2
+
+This option only applies to TCP streams.
+
+The Proxy Protocol header is written at the start of the raw TCP stream, before TLS and any higher-level protocol data.
 
 #### domain_resolver
 
