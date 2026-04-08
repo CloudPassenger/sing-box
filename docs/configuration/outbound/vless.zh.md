@@ -14,7 +14,8 @@
   "packet_encoding": "",
   "multiplex": {},
   "transport": {},
-  
+  "encryption": "",
+
   ... // 拨号字段
 }
 ```
@@ -76,6 +77,23 @@ UDP 包编码，默认使用 xudp。
 #### transport
 
 V2Ray 传输配置，参阅 [V2Ray 传输层](/zh/configuration/shared/v2ray-transport/)。
+
+#### encryption
+
+VLESS 加密密钥。
+
+使用 `sing-box generate vless-enc` 生成密钥对。
+
+密钥格式为 `mlkem768x25519plus.native.<模式>.<公钥>`。
+
+| 算法         | 命令                             |
+|--------------|----------------------------------|
+| X25519       | `sing-box generate vless-enc`    |
+| ML-KEM-768   | `sing-box generate vless-enc -m` |
+
+!!! note ""
+
+    设置环境变量 `SING_VMESS_ENCRYPTION_DISABLE_AES=1` 以禁用 AES。
 
 ### 拨号字段
 
