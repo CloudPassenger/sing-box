@@ -15,6 +15,7 @@ V2Ray Transport 是 v2ray 发明的一组私有协议，并污染了其他协议
 * QUIC
 * gRPC
 * HTTPUpgrade
+* XHTTP
 
 !!! warning "与 v2ray-core 的区别"
 
@@ -216,3 +217,299 @@ HTTP 请求路径
 HTTP 请求的额外标头。
 
 如果设置，服务器将写入响应。
+
+### XHTTP
+
+!!! note ""
+
+    XHTTP 是一种 Xray 风格的 HTTP 传输层。它通过同一套 V2Ray transport 入口供 VLESS、VMess 和 Trojan 使用。
+
+!!! warning "作用范围"
+
+    * `h3` 需要使用 `with_quic` 构建，因为当 TLS ALPN 设置为 `h3` 时，传输层会切换到基于 QUIC 的 HTTP/3。
+    * `packet-up` 会改变上行数据的承载方式，投入生产前应先与目标客户端和服务端完成联调。
+    * `download` 会在客户端创建一条副下载链路。它适合单独配置下载路径，不适合在不同服务器之间共享服务端会话状态。
+
+```json
+{
+  "type": "xhttp",
+  "mode": "auto",
+  "host": "",
+  "path": "",
+  "headers": {},
+  "x_padding_bytes": "100-1000",
+  "no_grpc_header": false,
+  "no_sse_header": false,
+  "sc_max_each_post_bytes": 1000000,
+  "sc_min_posts_interval_ms": 30,
+  "sc_max_buffered_posts": 30,
+  "sc_stream_up_server_secs": "20-80",
+  "xmux": {},
+  "x_padding_obfs_mode": false,
+  "x_padding_key": "x_padding",
+  "x_padding_header": "X-Padding",
+  "x_padding_placement": "queryInHeader",
+  "x_padding_method": "repeat-x",
+  "uplink_http_method": "POST",
+  "session_placement": "path",
+  "session_key": "",
+  "seq_placement": "path",
+  "seq_key": "",
+  "uplink_data_placement": "body",
+  "uplink_data_key": "",
+  "uplink_chunk_size": 0,
+  "download": {}
+}
+```
+
+#### mode
+
+XHTTP 传输模式。
+
+可用值：
+
+* `auto`
+* `packet-up`
+* `stream-up`
+* `stream-one`
+
+默认为 `auto`。
+
+`stream-one` 使用单个请求流。
+
+`stream-up` 将上传和下载拆成独立请求。
+
+`packet-up` 将上行数据拆分为离散的 HTTP 上传请求，并允许使用 `body` 以外的 `uplink_data_placement`。
+
+#### host
+
+请求 URL 使用的主机名。
+
+客户端优先级为 `host` > TLS `server_name` > 出站 `server`。
+
+如果设置，服务器会验证。
+
+#### path
+
+基础请求路径。
+
+规范化后路径始终以 `/` 开头并以 `/` 结尾。查询参数可以直接附加在该字段中，例如 `/xhttp/?ed=1`。
+
+#### headers
+
+额外 HTTP 请求头。
+
+这里不接受 `Host` 头，请使用 `host` 字段。
+
+#### x_padding_bytes
+
+填充长度范围。
+
+该字段是必需的，XHTTP 不允许禁用 padding。
+
+默认值为 `100-1000`。
+
+#### no_grpc_header
+
+不在客户端上传请求中发送 `Content-Type: application/grpc`。
+
+默认禁用。
+
+#### no_sse_header
+
+不在服务端下载响应中发送 `Content-Type: text/event-stream`。
+
+默认禁用。
+
+#### sc_max_each_post_bytes
+
+每个上传请求体的最大大小。
+
+默认值为 `1000000`。
+
+它必须大于 `8192`。
+
+#### sc_min_posts_interval_ms
+
+上传 POST 请求之间的最小间隔，单位为毫秒。
+
+默认值为 `30`。
+
+#### sc_max_buffered_posts
+
+服务端缓冲的最大上传请求数。
+
+默认值为 `30`。
+
+#### sc_stream_up_server_secs
+
+服务端在 `stream-up` 模式下保持上传链路存活时使用的填充刷新间隔。
+
+默认值为 `20-80`。
+
+#### xmux
+
+可选的 XHTTP 连接复用设置。
+
+如果省略，sing-box 会启用一组保守的默认 xmux 配置。
+
+结构：
+
+```json
+{
+  "max_concurrency": 1,
+  "max_connections": 0,
+  "c_max_reuse_times": 0,
+  "h_max_request_times": "600-900",
+  "h_max_reusable_secs": "1800-3000",
+  "h_keep_alive_period": 0
+}
+```
+
+`max_connections` 与 `max_concurrency` 不能同时使用。
+
+#### x_padding_obfs_mode
+
+使用配置的 placement 和 method 来写入 XHTTP padding，而不是默认兼容行为。
+
+默认禁用。
+
+#### x_padding_key
+
+在 `query`、`queryInHeader` 或 cookie placement 中使用的 padding 键名。
+
+默认值为 `x_padding`。
+
+#### x_padding_header
+
+基于 header 的 padding placement 使用的头名称。
+
+默认值为 `X-Padding`。
+
+#### x_padding_placement
+
+Padding 的放置位置。
+
+可用值：
+
+* `queryInHeader`
+* `cookie`
+* `header`
+* `query`
+
+默认值为 `queryInHeader`。
+
+#### x_padding_method
+
+Padding 编码方式。
+
+可用值：
+
+* `repeat-x`
+* `tokenish`
+
+默认值为 `repeat-x`。
+
+#### uplink_http_method
+
+客户端上传时使用的 HTTP 方法。
+
+默认值为 `POST`。
+
+`GET` 仅在 `packet-up` 模式下可用。
+
+#### session_placement
+
+XHTTP 会话标识的位置。
+
+可用值：
+
+* `path`
+* `cookie`
+* `header`
+* `query`
+
+默认值为 `path`。
+
+#### session_key
+
+当 `session_placement` 不为 `path` 时使用的字段名。
+
+默认情况下，`cookie` 和 `query` 使用 `x_session`，`header` 使用 `X-Session`。
+
+#### seq_placement
+
+上传序列号的位置。
+
+可用值：
+
+* `path`
+* `cookie`
+* `header`
+* `query`
+
+默认值为 `path`。
+
+当 `session_placement` 为 `path` 时，`seq_placement` 也必须为 `path`。
+
+#### seq_key
+
+当 `seq_placement` 不为 `path` 时使用的字段名。
+
+默认情况下，`cookie` 和 `query` 使用 `x_seq`，`header` 使用 `X-Seq`。
+
+#### uplink_data_placement
+
+包上传时数据的承载位置。
+
+可用值：
+
+* `body`
+* `cookie`
+* `header`
+
+默认值为 `body`。
+
+`cookie` 和 `header` 仅在 `packet-up` 模式下可用。
+
+#### uplink_data_key
+
+当 `uplink_data_placement` 不为 `body` 时使用的字段名。
+
+默认情况下，`cookie` 使用 `x_data`，`header` 使用 `X-Data`。
+
+#### uplink_chunk_size
+
+当数据被拆分到 headers 或 cookies 中时使用的分块大小。
+
+默认情况下，`cookie` 使用 `3072`，`header` 使用 `4096`。
+
+小于 `64` 的值会被规范化为 `64`。
+
+#### download
+
+客户端可选的副下载链路。
+
+结构：
+
+```json
+{
+  "server": "",
+  "server_port": 0,
+  "detour": "",
+  "host": "",
+  "path": "",
+  "x_padding_bytes": "100-1000",
+  "tls": {},
+  "xmux": {}
+}
+```
+
+它接受与主链路相同的基础 XHTTP 字段，另外还支持：
+
+* `server`
+* `server_port`
+* `detour`
+* `tls`
+
+适用于为下载流量指定单独的出站路径或 TLS 配置。
