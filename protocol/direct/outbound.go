@@ -71,10 +71,6 @@ func NewOutbound(ctx context.Context, router adapter.Router, logger log.ContextL
 		dialer:         outboundDialer.(dialer.ParallelInterfaceDialer),
 		isEmpty:        reflect.DeepEqual(options.DialerOptions, option.DialerOptions{UDPFragmentDefault: true}),
 	}
-	//nolint:staticcheck
-	if options.ProxyProtocol != 0 {
-		return nil, E.New("Proxy Protocol is deprecated and removed in sing-box 1.6.0")
-	}
 	return outbound, nil
 }
 

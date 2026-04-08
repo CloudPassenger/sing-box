@@ -8,9 +8,11 @@ import (
 	"time"
 
 	"github.com/sagernet/sing-box/adapter"
+	"github.com/sagernet/sing-box/common/proxyproto"
 	"github.com/sagernet/sing-box/common/redir"
 	C "github.com/sagernet/sing-box/constant"
 	"github.com/sagernet/sing-box/log"
+	"github.com/sagernet/sing/common/bufio"
 	"github.com/sagernet/sing/common/control"
 	E "github.com/sagernet/sing/common/exceptions"
 	M "github.com/sagernet/sing/common/metadata"
@@ -22,8 +24,8 @@ import (
 
 func (l *Listener) ListenTCP() (net.Listener, error) {
 	//nolint:staticcheck
-	if l.listenOptions.ProxyProtocol || l.listenOptions.ProxyProtocolAcceptNoHeader {
-		return nil, E.New("Proxy Protocol is deprecated and removed in sing-box 1.6.0")
+	if l.listenOptions.ProxyProtocolAcceptNoHeader && !l.listenOptions.ProxyProtocol {
+		return nil, E.New("`proxy_protocol_accept_no_header` requires `proxy_protocol`")
 	}
 	var err error
 	bindAddr := M.SocksaddrFrom(l.listenOptions.Listen.Build(netip.AddrFrom4([4]byte{127, 0, 0, 1})), l.listenOptions.ListenPort)
@@ -77,6 +79,11 @@ func (l *Listener) ListenTCP() (net.Listener, error) {
 	if err != nil {
 		return nil, err
 	}
+	//nolint:staticcheck
+	if l.listenOptions.ProxyProtocol {
+		//nolint:staticcheck
+		tcpListener = &proxyproto.Listener{Listener: tcpListener, AcceptNoHeader: l.listenOptions.ProxyProtocolAcceptNoHeader}
+	}
 	l.logger.Info("tcp server started at ", tcpListener.Addr())
 	l.tcpListener = tcpListener
 	return tcpListener, err
@@ -105,7 +112,13 @@ func (l *Listener) loopTCPIn() {
 		metadata.Source = M.SocksaddrFromNet(conn.RemoteAddr()).Unwrap()
 		metadata.OriginDestination = M.SocksaddrFromNet(conn.LocalAddr()).Unwrap()
 		ctx := log.ContextWithNewID(l.ctx)
-		l.logger.InfoContext(ctx, "inbound connection from ", metadata.Source)
+		//nolint:staticcheck
+		if addrConn, isAddrConn := conn.(*bufio.AddrConn); isAddrConn && l.listenOptions.ProxyProtocol {
+			proxyAddress := M.SocksaddrFromNet(addrConn.Conn.RemoteAddr()).Unwrap()
+			l.logger.InfoContext(ctx, "inbound connection from ", metadata.Source, " via proxy protocol from ", proxyAddress)
+		} else {
+			l.logger.InfoContext(ctx, "inbound connection from ", metadata.Source)
+		}
 		go l.connHandler.NewConnectionEx(ctx, conn, metadata, nil)
 	}
 }
