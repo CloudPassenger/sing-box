@@ -80,10 +80,9 @@ type ListenOptions struct {
 	UDPTimeout           UDPTimeoutCompat   `json:"udp_timeout,omitempty"`
 	Detour               string             `json:"detour,omitempty"`
 
-	// Deprecated: removed
-	ProxyProtocol bool `json:"proxy_protocol,omitempty"`
-	// Deprecated: removed
+	ProxyProtocol               bool `json:"proxy_protocol,omitempty"`
 	ProxyProtocolAcceptNoHeader bool `json:"proxy_protocol_accept_no_header,omitempty"`
+
 	InboundOptions
 }
 
