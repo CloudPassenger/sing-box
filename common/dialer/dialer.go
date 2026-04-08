@@ -132,6 +132,9 @@ func NewWithOptions(options Options) (N.Dialer, error) {
 			resolveFallbackDelay,
 		)
 	}
+	if dialOptions.ProxyProtocol != 0 {
+		dialer = wrapProxyProtocolDialer(dialer, dialOptions.ProxyProtocol)
+	}
 	return dialer, nil
 }
 
