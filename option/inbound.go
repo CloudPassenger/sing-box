@@ -93,9 +93,7 @@ type ListenOptions struct {
 	UDPTimeout           UDPTimeoutCompat   `json:"udp_timeout,omitempty"`
 	Detour               string             `json:"detour,omitempty" reference:"inbound"`
 
-	// Deprecated: removed
-	ProxyProtocol bool `json:"proxy_protocol,omitempty" schema:"omit"`
-	// Deprecated: removed
+	ProxyProtocol               bool `json:"proxy_protocol,omitempty" schema:"omit"`
 	ProxyProtocolAcceptNoHeader bool `json:"proxy_protocol_accept_no_header,omitempty" schema:"omit"`
 	// Legacy inbound fields are rejected since sing-box 1.13.0.
 	//nolint:staticcheck

@@ -2,6 +2,7 @@ package option
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 
 	C "github.com/sagernet/sing-box/constant"
@@ -106,9 +107,39 @@ type AbstractDialerOptions struct {
 	NetworkType                badoption.Listable[InterfaceType] `json:"network_type,omitempty"`
 	FallbackNetworkType        badoption.Listable[InterfaceType] `json:"fallback_network_type,omitempty"`
 	FallbackDelay              badoption.Duration                `json:"fallback_delay,omitempty"`
+	ProxyProtocol              ProxyProtocolVersion              `json:"proxy_protocol,omitempty" schema:"omit"`
 
 	// Deprecated: migrated to domain resolver
 	DomainStrategy DomainStrategy `json:"domain_strategy,omitempty" schema:"omit"`
+}
+
+type ProxyProtocolVersion uint8
+
+func (v ProxyProtocolVersion) MarshalJSON() ([]byte, error) {
+	return json.Marshal(uint8(v))
+}
+
+func (v *ProxyProtocolVersion) UnmarshalJSON(data []byte) error {
+	var boolValue bool
+	err := json.Unmarshal(data, &boolValue)
+	if err == nil {
+		if boolValue {
+			*v = 2
+		} else {
+			*v = 0
+		}
+		return nil
+	}
+	var intValue uint8
+	err = json.Unmarshal(data, &intValue)
+	if err != nil {
+		return err
+	}
+	if intValue > 2 {
+		return E.New("invalid proxy_protocol: ", fmt.Sprint(intValue), ", must be false, true, 0, 1, or 2")
+	}
+	*v = ProxyProtocolVersion(intValue)
+	return nil
 }
 
 type _DomainResolveOptions struct {
