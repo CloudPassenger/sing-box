@@ -1,0 +1,44 @@
+{
+  "log": {
+    "level": "info"
+  },
+  "inbounds": [
+    {
+      "type": "vless",
+      "tag": "vless-in",
+      "listen": "127.0.0.1",
+      "listen_port": 24444,
+      "users": [
+        {
+          "name": "xhttp-test",
+          "uuid": "9b65b7e1-04c8-4717-8f45-2aa61fd25937"
+        }
+      ],
+      "tls": {
+        "enabled": true,
+        "server_name": "localhost",
+        "alpn": [
+          "h2"
+        ],
+        "certificate_path": "examples/xhttp/cert.pem",
+        "key_path": "examples/xhttp/key.pem"
+      },
+      "transport": {
+        "type": "xhttp",
+        "mode": "stream-one",
+        "host": "localhost",
+        "path": "/xhttp",
+        "x_padding_bytes": "64-256"
+      }
+    }
+  ],
+  "outbounds": [
+    {
+      "type": "direct",
+      "tag": "direct"
+    }
+  ],
+  "route": {
+    "final": "direct"
+  }
+}

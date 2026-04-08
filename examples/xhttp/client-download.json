@@ -1,0 +1,60 @@
+{
+  "log": {
+    "level": "info"
+  },
+  "inbounds": [
+    {
+      "type": "mixed",
+      "tag": "mixed-in",
+      "listen": "127.0.0.1",
+      "listen_port": 2084
+    }
+  ],
+  "outbounds": [
+    {
+      "type": "direct",
+      "tag": "download-direct"
+    },
+    {
+      "type": "vless",
+      "tag": "vless-out",
+      "server": "127.0.0.1",
+      "server_port": 24447,
+      "uuid": "9b65b7e1-04c8-4717-8f45-2aa61fd25937",
+      "tls": {
+        "enabled": true,
+        "server_name": "localhost",
+        "insecure": true,
+        "alpn": [
+          "h2"
+        ]
+      },
+      "transport": {
+        "type": "xhttp",
+        "mode": "stream-up",
+        "host": "localhost",
+        "path": "/xhttp-download",
+        "x_padding_bytes": "64-256",
+        "download": {
+          "server": "127.0.0.1",
+          "server_port": 24447,
+          "detour": "download-direct",
+          "host": "localhost",
+          "path": "/xhttp-download",
+          "x_padding_bytes": "64-256",
+          "tls": {
+            "enabled": true,
+            "server_name": "localhost",
+            "insecure": true,
+            "alpn": [
+              "h2"
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "route": {
+    "final": "vless-out"
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "log": {
+    "level": "info"
+  },
+  "inbounds": [
+    {
+      "type": "mixed",
+      "tag": "mixed-in",
+      "listen": "127.0.0.1",
+      "listen_port": 2083
+    }
+  ],
+  "outbounds": [
+    {
+      "type": "vmess",
+      "tag": "vmess-out",
+      "server": "127.0.0.1",
+      "server_port": 24446,
+      "uuid": "9b65b7e1-04c8-4717-8f45-2aa61fd25937",
+      "security": "auto",
+      "tls": {
+        "enabled": true,
+        "server_name": "localhost",
+        "insecure": true,
+        "alpn": [
+          "h2"
+        ]
+      },
+      "transport": {
+        "type": "xhttp",
+        "mode": "stream-up",
+        "host": "localhost",
+        "path": "/xhttp",
+        "x_padding_bytes": "64-256"
+      }
+    }
+  ],
+  "route": {
+    "final": "vmess-out"
+  }
+}
