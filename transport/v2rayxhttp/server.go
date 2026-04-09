@@ -156,10 +156,7 @@ func (s *Server) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 	}
 	scMaxEachPostBytes := int(s.options.GetNormalizedScMaxEachPostBytes().To)
 	uplinkHTTPMethod := s.options.GetNormalizedUplinkHTTPMethod()
-	isUplinkRequest := false
-	if uplinkHTTPMethod != "GET" && request.Method == uplinkHTTPMethod {
-		isUplinkRequest = true
-	}
+	isUplinkRequest := uplinkHTTPMethod != "GET" && request.Method == uplinkHTTPMethod
 	uplinkDataPlacement := s.options.GetNormalizedUplinkDataPlacement()
 	uplinkDataKey := s.options.UplinkDataKey
 	switch uplinkDataPlacement {
