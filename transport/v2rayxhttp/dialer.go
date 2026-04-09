@@ -226,6 +226,7 @@ func (c *DefaultDialerClient) PostPacket(ctx context.Context, url string, sessio
 						c.closed = true
 						return fmt.Errorf("error while reading response: %s", err.Error())
 					}
+					h1UploadConn.UnreadedResponsesCount -= 1
 					io.Copy(io.Discard, resp.Body)
 					defer resp.Body.Close()
 					if resp.StatusCode != 200 {
@@ -239,6 +240,7 @@ func (c *DefaultDialerClient) PostPacket(ctx context.Context, url string, sessio
 			// failed writes to a pooled connection are normal when
 			// the connection has been closed in the meantime.
 			if err == nil {
+				h1UploadConn.UnreadedResponsesCount += 1
 				break
 			} else if newConnection {
 				return err
