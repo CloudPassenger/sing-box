@@ -48,6 +48,18 @@ type Client struct {
 	secondaryXmux   *XmuxManager
 }
 
+func retainXmuxClient(xmuxClient *XmuxClient) {
+	if xmuxClient != nil {
+		xmuxClient.OpenUsage.Add(1)
+	}
+}
+
+func releaseXmuxClient(xmuxClient *XmuxClient) {
+	if xmuxClient != nil {
+		xmuxClient.OpenUsage.Add(-1)
+	}
+}
+
 func NewClient(ctx context.Context, dialer N.Dialer, serverAddr M.Socksaddr, options option.V2RayXHTTPOptions, tlsConfig tls.Config) (adapter.V2RayClientTransport, error) {
 	logger := resolveLogger(ctx)
 	if options.Mode == "" {
@@ -137,11 +149,9 @@ func (c *Client) DialContext(ctx context.Context) (net.Conn, error) {
 	requestURL2 := c.baseRequestURL2
 	httpClient, xmuxClient := c.getHTTPClient()
 	httpClient2, xmuxClient2 := c.getHTTPClient2()
-	if xmuxClient != nil {
-		xmuxClient.OpenUsage.Add(1)
-	}
-	if xmuxClient2 != nil && xmuxClient2 != xmuxClient {
-		xmuxClient2.OpenUsage.Add(1)
+	retainXmuxClient(xmuxClient)
+	if xmuxClient2 != xmuxClient {
+		retainXmuxClient(xmuxClient2)
 	}
 	var closed atomic.Int32
 	reader, writer := io.Pipe()
@@ -151,11 +161,9 @@ func (c *Client) DialContext(ctx context.Context) (net.Conn, error) {
 			if closed.Add(1) > 1 {
 				return
 			}
-			if xmuxClient != nil {
-				xmuxClient.OpenUsage.Add(-1)
-			}
-			if xmuxClient2 != nil && xmuxClient2 != xmuxClient {
-				xmuxClient2.OpenUsage.Add(-1)
+			releaseXmuxClient(xmuxClient)
+			if xmuxClient2 != xmuxClient {
+				releaseXmuxClient(xmuxClient2)
 			}
 		},
 	}
@@ -232,7 +240,9 @@ func (c *Client) DialContext(ctx context.Context) (net.Conn, error) {
 			lastWrite = time.Now()
 			if xmuxClient != nil && (xmuxClient.LeftRequests.Add(-1) <= 0 ||
 				(xmuxClient.UnreusableAt != time.Time{} && lastWrite.After(xmuxClient.UnreusableAt))) {
+				releaseXmuxClient(xmuxClient)
 				httpClient, xmuxClient = c.getHTTPClient()
+				retainXmuxClient(xmuxClient)
 			}
 			go func() {
 				err := httpClient.PostPacket(
