@@ -15,9 +15,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	flagGenerateVlessMlkem768 bool
-)
+var flagGenerateVlessMlkem768 bool
 
 var commandGenerateVlessEncryption = &cobra.Command{
 	Use:   "vless-enc",
