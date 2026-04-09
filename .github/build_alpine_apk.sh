@@ -20,18 +20,62 @@ BINARY_PATH="$3"
 OUTPUT_PATH="$4"
 
 if [ -z "$ARCHITECTURE" ] || [ -z "$VERSION" ] || [ -z "$BINARY_PATH" ] || [ -z "$OUTPUT_PATH" ]; then
-  echo "Usage: $0 <architecture> <version> <binary_path> <output_path>"
-  exit 1
+	echo "Usage: $0 <architecture> <version> <binary_path> <output_path>"
+	exit 1
 fi
 
-PROJECT=$(cd "$(dirname "$0")/.."; pwd)
+PROJECT=$(
+	cd "$(dirname "$0")/.."
+	pwd
+)
 
-# Convert version to APK format:
-#   1.13.0-beta.8  -> 1.13.0_beta8-r0
-#   1.13.0-rc.3    -> 1.13.0_rc3-r0
-#   1.13.0         -> 1.13.0-r0
-APK_VERSION=$(echo "$VERSION" | sed -E 's/-([a-z]+)\.([0-9]+)/_\1\2/')
-APK_VERSION="${APK_VERSION}-r0"
+get_git_timestamp() {
+	if git -C "$PROJECT" rev-parse --git-dir >/dev/null 2>&1; then
+		git -C "$PROJECT" log -1 --format=%cd --date=format:%Y%m%d%H%M%S
+	else
+		date -u +%Y%m%d%H%M%S
+	fi
+}
+
+normalize_patch_suffix() {
+	local version="$1"
+	local major minor patch extra
+	IFS='.' read -r major minor patch extra <<<"$version"
+	: "${major:=0}" "${minor:=0}" "${patch:=0}"
+	printf '%03d%03d%03d' "$major" "$minor" "$patch"
+}
+
+to_apk_version() {
+	local version="$1"
+	if [[ "$version" =~ ^([0-9]+(\.[0-9]+)*?)-superpower-([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+		local upstream_version="${BASH_REMATCH[1]}"
+		local fork_version="${BASH_REMATCH[3]}"
+		echo "${upstream_version}_p$(normalize_patch_suffix "$fork_version")-r0"
+		return
+	fi
+	if [[ "$version" =~ ^([0-9]+(\.[0-9]+)*?)-superpower(-testing)?-[0-9a-f]+$ ]]; then
+		local upstream_version="${BASH_REMATCH[1]}"
+		echo "${upstream_version}_git$(get_git_timestamp)-r0"
+		return
+	fi
+	if [[ "$version" =~ ^([0-9]+(\.[0-9]+)*?)-([0-9a-f]+)$ ]]; then
+		local upstream_version="${BASH_REMATCH[1]}"
+		echo "${upstream_version}_git$(get_git_timestamp)-r0"
+		return
+	fi
+	local apk_version
+	apk_version=$(echo "$version" | sed -E 's/-([a-z]+)\.([0-9]+)/_\1\2/')
+	apk_version=$(echo "$apk_version" | tr '-' '_')
+	echo "${apk_version}-r0"
+}
+
+# Convert version to APK format using Alpine-compatible suffixes:
+#   1.13.0-beta.8                  -> 1.13.0_beta8-r0
+#   1.13.0-rc.3                    -> 1.13.0_rc3-r0
+#   1.13.6-superpower-0.1.0        -> 1.13.6_p000001000-r0
+#   1.13.6-superpower-bc1d840d     -> 1.13.6_git20260409123456-r0
+#   1.13.0                         -> 1.13.0-r0
+APK_VERSION=$(to_apk_version "$VERSION")
 
 ROOT_DIR=$(mktemp -d)
 prepare_apk_root
@@ -62,7 +106,7 @@ PACKAGES_DIR="$ROOT_DIR/lib/apk/packages"
 mkdir -p "$PACKAGES_DIR"
 
 # .conffiles
-cat > "$PACKAGES_DIR/.conffiles" <<'EOF'
+cat >"$PACKAGES_DIR/.conffiles" <<'EOF'
 /etc/conf.d/sing-box
 /etc/init.d/sing-box
 /etc/sing-box/config.json
@@ -70,25 +114,25 @@ EOF
 
 # .conffiles_static (sha256 checksums)
 while IFS= read -r conffile; do
-  sha256=$(sha256sum "$ROOT_DIR$conffile" | cut -d' ' -f1)
-  echo "$conffile $sha256"
-done < "$PACKAGES_DIR/.conffiles" > "$PACKAGES_DIR/.conffiles_static"
+	sha256=$(sha256sum "$ROOT_DIR$conffile" | cut -d' ' -f1)
+	echo "$conffile $sha256"
+done <"$PACKAGES_DIR/.conffiles" >"$PACKAGES_DIR/.conffiles_static"
 
 # .list (all files, excluding lib/apk/packages/ metadata)
-(cd "$ROOT_DIR" && find . -type f -o -type l) \
-  | sed 's|^\./|/|' \
-  | grep -v '^/lib/apk/packages/' \
-  | sort > "$PACKAGES_DIR/.list"
+(cd "$ROOT_DIR" && find . -type f -o -type l) |
+	sed 's|^\./|/|' |
+	grep -v '^/lib/apk/packages/' |
+	sort >"$PACKAGES_DIR/.list"
 
 # Build APK
-apk --root "$APK_ROOT_DIR" mkpkg \
-  --info "name:sing-box" \
-  --info "version:${APK_VERSION}" \
-  --info "description:The universal proxy platform." \
-  --info "arch:${ARCHITECTURE}" \
-  --info "license:GPL-3.0-or-later with name use or association addition" \
-  --info "origin:sing-box" \
-  --info "url:https://sing-box.sagernet.org/" \
-  --info "maintainer:nekohasekai <contact-git@sekai.icu>" \
-  --files "$ROOT_DIR" \
-  --output "$OUTPUT_PATH"
+apk mkpkg \
+	--info "name:sing-box" \
+	--info "version:${APK_VERSION}" \
+	--info "description:The universal proxy platform." \
+	--info "arch:${ARCHITECTURE}" \
+	--info "license:GPL-3.0-or-later with name use or association addition" \
+	--info "origin:sing-box" \
+	--info "url:https://sing-box.sagernet.org/" \
+	--info "maintainer:nekohasekai <contact-git@sekai.icu>" \
+	--files "$ROOT_DIR" \
+	--output "$OUTPUT_PATH"
