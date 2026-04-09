@@ -3,8 +3,8 @@ name: Publish Docker Images
 on:
   #push:
   #  branches:
-  #    - stable
-  #    - testing
+  #    - superpower
+  #    - superpower-testing
   release:
     types:
       - published
@@ -12,9 +12,6 @@ on:
     inputs:
       tag:
         description: "The tag version you want to build"
-
-env:
-  REGISTRY_IMAGE: ghcr.io/sagernet/sing-box
 
 jobs:
   build_binary:
@@ -195,6 +192,9 @@ jobs:
         run: |
           platform=${{ matrix.platform }}
           echo "PLATFORM_PAIR=${platform//\//-}" >> $GITHUB_ENV
+      - name: Set registry image
+        run: |
+          echo "REGISTRY_IMAGE=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/sing-box" >> $GITHUB_ENV
       - name: Download binary
         uses: actions/download-artifact@v5
         with:
@@ -264,6 +264,9 @@ jobs:
         with:
           ref: ${{ steps.ref.outputs.ref }}
           fetch-depth: 0
+      - name: Set registry image
+        run: |
+          echo "REGISTRY_IMAGE=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/sing-box" >> $GITHUB_ENV
       - name: Detect track
         run: bash .github/detect_track.sh
       - name: Download digests
