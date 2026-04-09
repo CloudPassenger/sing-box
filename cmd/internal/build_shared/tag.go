@@ -1,6 +1,8 @@
 package build_shared
 
 import (
+	"strings"
+
 	"github.com/sagernet/sing-box/common/badversion"
 	"github.com/sagernet/sing/common"
 	F "github.com/sagernet/sing/common/format"
@@ -14,22 +16,28 @@ func ReadTag() (string, error) {
 	}
 	currentTagRev, _ := shell.Exec("git", "describe", "--tags", "--abbrev=0").ReadOutput()
 	if currentTagRev == currentTag {
-		return currentTag[1:], nil
+		return strings.TrimPrefix(currentTag, "v"), nil
 	}
 	shortCommit, _ := shell.Exec("git", "rev-parse", "--short", "HEAD").ReadOutput()
-	version := badversion.Parse(currentTagRev[1:])
+	if upstreamVersion, forkVersion, isForkTag := splitForkTag(currentTagRev); isForkTag {
+		return upstreamVersion + "-superpower-" + forkVersion + "-" + shortCommit, nil
+	}
+	version := badversion.Parse(strings.TrimPrefix(currentTagRev, "v"))
 	return version.String() + "-" + shortCommit, nil
 }
 
 func ReadTagVersionRev() (badversion.Version, error) {
 	currentTagRev := common.Must1(shell.Exec("git", "describe", "--tags", "--abbrev=0").ReadOutput())
-	return badversion.Parse(currentTagRev[1:]), nil
+	if upstreamVersion, _, isForkTag := splitForkTag(currentTagRev); isForkTag {
+		return badversion.Parse(upstreamVersion), nil
+	}
+	return badversion.Parse(strings.TrimPrefix(currentTagRev, "v")), nil
 }
 
 func ReadTagVersion() (badversion.Version, error) {
 	currentTag := common.Must1(shell.Exec("git", "describe", "--tags").ReadOutput())
 	currentTagRev := common.Must1(shell.Exec("git", "describe", "--tags", "--abbrev=0").ReadOutput())
-	version := badversion.Parse(currentTagRev[1:])
+	version := common.Must1(ReadTagVersionRev())
 	if currentTagRev != currentTag {
 		if version.PreReleaseIdentifier == "" {
 			version.Patch++
@@ -40,4 +48,19 @@ func ReadTagVersion() (badversion.Version, error) {
 
 func TestFlightVersion(version badversion.Version) string {
 	return F.ToString(version.Major, ".", version.Minor, ".10")
+}
+
+func splitForkTag(tag string) (string, string, bool) {
+	tag = strings.TrimPrefix(tag, "v")
+	const forkSeparator = "-superpower-"
+	separatorIndex := strings.Index(tag, forkSeparator)
+	if separatorIndex < 0 {
+		return "", "", false
+	}
+	upstreamVersion := tag[:separatorIndex]
+	forkVersion := tag[separatorIndex+len(forkSeparator):]
+	if upstreamVersion == "" || forkVersion == "" {
+		return "", "", false
+	}
+	return upstreamVersion, forkVersion, true
 }

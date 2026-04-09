@@ -3,8 +3,8 @@ name: Build Linux Packages
 on:
   #push:
   #  branches:
-  #    - stable
-  #    - testing
+  #    - superpower
+  #    - superpower-testing
   workflow_dispatch:
     inputs:
       version:
@@ -38,7 +38,7 @@ jobs:
       - name: Calculate version
         if: github.event_name != 'workflow_dispatch'
         run: |-
-          go run -v ./cmd/internal/read_tag --ci --nightly
+          go run -v ./cmd/internal/read_tag --ci
       - name: Set outputs
         id: outputs
         run: |-
@@ -239,5 +239,12 @@ jobs:
           merge-multiple: true
       - name: Publish packages
         if: github.event_name != 'push'
+        env:
+          FURY_OWNER: ${{ vars.FURY_OWNER }}
+          FURY_TOKEN: ${{ secrets.FURY_TOKEN }}
         run: |-
-          ls dist | xargs -I {} curl -F "package=@dist/{}" https://${{ secrets.FURY_TOKEN }}@push.fury.io/sagernet/
+          if [[ -z "$FURY_TOKEN" || -z "$FURY_OWNER" ]]; then
+            echo "Skipping Gemfury publish because FURY_TOKEN or FURY_OWNER is not configured."
+            exit 0
+          fi
+          ls dist | xargs -I {} curl -F "package=@dist/{}" "https://${FURY_TOKEN}@push.fury.io/${FURY_OWNER}/"
