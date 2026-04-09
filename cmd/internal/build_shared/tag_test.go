@@ -20,3 +20,11 @@ func TestSplitForkTag(t *testing.T) {
 	_, _, isForkTag = splitForkTag("v1.13.2-superpower-")
 	require.False(t, isForkTag)
 }
+
+func TestDetectForkTrackSuffix(t *testing.T) {
+	t.Parallel()
+
+	require.Equal(t, "superpower", detectForkTrackSuffixFromBranch("superpower"))
+	require.Equal(t, "superpower-testing", detectForkTrackSuffixFromBranch("superpower-testing"))
+	require.Empty(t, detectForkTrackSuffixFromBranch("stable"))
+}

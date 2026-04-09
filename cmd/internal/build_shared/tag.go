@@ -21,6 +21,10 @@ func ReadTag() (string, error) {
 	if upstreamVersion, forkVersion, isForkTag := splitForkTag(currentTagRev); isForkTag {
 		return upstreamVersion + "-superpower-" + forkVersion + "-" + shortCommit, nil
 	}
+	if trackSuffix := detectForkTrackSuffix(); trackSuffix != "" {
+		version := badversion.Parse(strings.TrimPrefix(currentTagRev, "v"))
+		return version.String() + "-" + trackSuffix + "-" + shortCommit, nil
+	}
 	version := badversion.Parse(strings.TrimPrefix(currentTagRev, "v"))
 	return version.String() + "-" + shortCommit, nil
 }
@@ -58,4 +62,21 @@ func splitForkTag(tag string) (string, string, bool) {
 		return "", "", false
 	}
 	return upstreamVersion, forkVersion, true
+}
+
+func detectForkTrackSuffix() string {
+	branchName, err := shell.Exec("git", "branch", "--show-current").ReadOutput()
+	if err != nil {
+		return ""
+	}
+	return detectForkTrackSuffixFromBranch(branchName)
+}
+
+func detectForkTrackSuffixFromBranch(branchName string) string {
+	switch branchName {
+	case "superpower", "superpower-testing":
+		return branchName
+	default:
+		return ""
+	}
 }
