@@ -39,7 +39,7 @@ type Buffer struct {
 
 // New creates a Buffer with 0 length and 8K capacity, managed.
 func New() *Buffer {
-	buf := pool.Get().([]byte)
+	buf := *pool.Get().(*[]byte)
 	if cap(buf) >= Size {
 		buf = buf[:Size]
 	} else {
@@ -80,7 +80,7 @@ func FromBytes(b []byte) *Buffer {
 // StackNew creates a new Buffer object on stack, managed.
 // This method is for buffers that is released in the same function.
 func StackNew() Buffer {
-	buf := pool.Get().([]byte)
+	buf := *pool.Get().(*[]byte)
 	if cap(buf) >= Size {
 		buf = buf[:Size]
 	} else {
@@ -113,7 +113,7 @@ func (b *Buffer) Release() {
 	switch b.ownership {
 	case managed:
 		if cap(p) == Size {
-			pool.Put(p)
+			pool.Put(&p)
 		}
 	case bytespools:
 		bytespool.Free(p)

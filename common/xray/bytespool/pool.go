@@ -4,7 +4,8 @@ import "sync"
 
 func createAllocFunc(size int32) func() interface{} {
 	return func() interface{} {
-		return make([]byte, size)
+		buf := make([]byte, size)
+		return &buf
 	}
 }
 
@@ -52,7 +53,7 @@ func GetPool(size int32) *sync.Pool {
 func Alloc(size int32) []byte {
 	pool := GetPool(size)
 	if pool != nil {
-		return pool.Get().([]byte)
+		return *pool.Get().(*[]byte)
 	}
 	return make([]byte, size)
 }
@@ -65,7 +66,7 @@ func Free(b []byte) {
 	b = b[0:cap(b)]
 	for i := numPools - 1; i >= 0; i-- {
 		if size >= poolSize[i] {
-			pool[i].Put(b)
+			pool[i].Put(&b)
 			return
 		}
 	}
