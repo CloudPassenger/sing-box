@@ -9,6 +9,8 @@ import (
 )
 
 func TestProxyProtocolVersionUnmarshal(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name     string
 		input    string
@@ -21,7 +23,11 @@ func TestProxyProtocolVersionUnmarshal(t *testing.T) {
 		{name: "two", input: `{"proxy_protocol":2}`, expected: 2},
 	}
 	for _, test := range tests {
+		test := test
+
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
 			var options DialerOptions
 			err := json.Unmarshal([]byte(test.input), &options)
 			require.NoError(t, err)
@@ -31,6 +37,8 @@ func TestProxyProtocolVersionUnmarshal(t *testing.T) {
 }
 
 func TestProxyProtocolVersionUnmarshalInvalid(t *testing.T) {
+	t.Parallel()
+
 	var options DialerOptions
 	err := json.Unmarshal([]byte(`{"proxy_protocol":3}`), &options)
 	require.Error(t, err)
