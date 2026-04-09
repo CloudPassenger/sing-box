@@ -18,7 +18,7 @@ setup_environment() {
         export PATH="$PATH:/usr/local/go/bin"
     fi
 
-    if ! command -v go &> /dev/null; then
+    if ! command -v go &>/dev/null; then
         echo "Error: Go is not installed or not in PATH"
         echo "Run install_go.sh to install Go"
         exit 1
@@ -38,7 +38,7 @@ get_version() {
     cd "$PROJECT_DIR"
     GOHOSTOS=$(go env GOHOSTOS)
     GOHOSTARCH=$(go env GOHOSTARCH)
-    CGO_ENABLED=0 GOOS=$GOHOSTOS GOARCH=$GOHOSTARCH go run github.com/sagernet/sing-box/cmd/internal/read_tag@latest
+    CGO_ENABLED=0 GOOS=$GOHOSTOS GOARCH=$GOHOSTARCH go run ./cmd/internal/read_tag
 }
 
 get_ldflags() {
