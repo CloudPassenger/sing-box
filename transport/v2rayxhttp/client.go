@@ -32,6 +32,7 @@ import (
 	N "github.com/sagernet/sing/common/network"
 	sHTTP "github.com/sagernet/sing/protocol/http"
 	"github.com/sagernet/sing/service"
+
 	"golang.org/x/net/http2"
 )
 
