@@ -18,8 +18,15 @@ else
 fi
 
 if [[ "$track" == "stable" ]]; then
-	tag=$(git describe --tags --exact-match HEAD 2>/dev/null || true)
-	if [[ -n "$tag" && "$tag" == *"-"* ]]; then
+	version="${VERSION:-}"
+	if [[ -z "$version" ]]; then
+		tag=$(git describe --tags --exact-match HEAD 2>/dev/null || true)
+		version="${tag#v}"
+	fi
+	if [[ "$version" == *-superpower-* ]]; then
+		version="${version%%-superpower-*}"
+	fi
+	if [[ -n "$version" && "$version" == *"-"* ]]; then
 		track=beta
 	fi
 fi
