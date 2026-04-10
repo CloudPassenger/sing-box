@@ -28,8 +28,11 @@ type RuleAction interface {
 }
 
 func IsFinalAction(action RuleAction) bool {
+	if action == nil {
+		return false
+	}
 	switch action.Type() {
-	case C.RuleActionTypeSniff, C.RuleActionTypeResolve:
+	case C.RuleActionTypeSniff, C.RuleActionTypeResolve, C.RuleActionTypeRouteOptions, C.RuleActionTypeLimitOptions:
 		return false
 	default:
 		return true
