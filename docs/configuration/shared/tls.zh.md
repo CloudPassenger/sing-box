@@ -101,7 +101,14 @@ icon: material/new-box
     "short_id": [
       "0123456789abcdef"
     ],
-    "max_time_difference": "1m"
+    "max_time_difference": "1m",
+    "fallback_limit": {
+      "sampling_period": "1s",
+      "down_mbps": 4,
+      "down_burst_mbps": 6,
+      "up_mbps": 4,
+      "up_burst_mbps": 6
+    }
   }
 }
 ```
@@ -820,3 +827,51 @@ ACME DNS01 验证字段。如果配置，将禁用其他验证方法。
 服务器和客户端之间的最大时间差。
 
 如果为空则禁用检查。
+
+#### fallback_limit
+
+==仅服务器==
+
+可选的 fallback 流量限速配置。
+
+该限制只作用于 REALITY 校验失败后，被转发到 `handshake` 所配置目标服务器的普通 TLS fallback 流量。
+
+#### fallback_limit.sampling_period
+
+==仅服务器==
+
+用于推导令牌桶突发容量的采样周期。
+
+默认值为 `1s`。
+
+#### fallback_limit.down_mbps
+
+==仅服务器==
+
+fallback 流量的下载速率限制，单位为 Mbps。
+
+该值作用于从 fallback 服务器返回到客户端的流量。
+
+#### fallback_limit.down_burst_mbps
+
+==仅服务器==
+
+fallback 下载突发容量，以一个 `sampling_period` 内的 Mbps 表示。
+
+需要同时设置 `down_mbps`。如果为空，则默认使用 `down_mbps * sampling_period` 计算突发容量。
+
+#### fallback_limit.up_mbps
+
+==仅服务器==
+
+fallback 流量的上传速率限制，单位为 Mbps。
+
+该值作用于从客户端发送到 fallback 服务器的流量。
+
+#### fallback_limit.up_burst_mbps
+
+==仅服务器==
+
+fallback 上传突发容量，以一个 `sampling_period` 内的 Mbps 表示。
+
+需要同时设置 `up_mbps`。如果为空，则默认使用 `up_mbps * sampling_period` 计算突发容量。

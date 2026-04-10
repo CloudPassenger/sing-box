@@ -8,6 +8,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
+	"math"
 	"net"
 	"time"
 
@@ -28,6 +29,27 @@ var _ ServerConfigCompat = (*RealityServerConfig)(nil)
 type RealityServerConfig struct {
 	config           *utls.RealityConfig
 	handshakeTimeout time.Duration
+}
+
+func buildRealityLimitFallback(rateMbps *float64, burstMbps *float64, samplingPeriod time.Duration) utls.RealityLimitFallback {
+	if rateMbps == nil {
+		return utls.RealityLimitFallback{}
+	}
+	if samplingPeriod == 0 {
+		samplingPeriod = time.Second
+	}
+	bytesPerSec := uint64(*rateMbps * C.MbpsToBps)
+	burstBytes := *rateMbps * C.MbpsToBps * samplingPeriod.Seconds()
+	if burstMbps != nil {
+		burstBytes = *burstMbps * C.MbpsToBps * samplingPeriod.Seconds()
+	}
+	if burstBytes < 1 {
+		burstBytes = 1
+	}
+	return utls.RealityLimitFallback{
+		BytesPerSec:      bytesPerSec,
+		BurstBytesPerSec: uint64(math.Ceil(burstBytes)),
+	}
 }
 
 func NewRealityServer(ctx context.Context, logger log.ContextLogger, options option.InboundTLSOptions) (ServerConfig, error) {
@@ -102,6 +124,11 @@ func NewRealityServer(ctx context.Context, logger log.ContextLogger, options opt
 	}
 	tlsConfig.PrivateKey = privateKey
 	tlsConfig.MaxTimeDiff = time.Duration(options.Reality.MaxTimeDifference)
+	if options.Reality.FallbackLimit != nil {
+		samplingPeriod := options.Reality.FallbackLimit.SamplingPeriod.Build()
+		tlsConfig.LimitFallbackUpload = buildRealityLimitFallback(options.Reality.FallbackLimit.UpMbps, options.Reality.FallbackLimit.UpBurstMbps, samplingPeriod)
+		tlsConfig.LimitFallbackDownload = buildRealityLimitFallback(options.Reality.FallbackLimit.DownMbps, options.Reality.FallbackLimit.DownBurstMbps, samplingPeriod)
+	}
 
 	tlsConfig.ShortIds = make(map[[8]byte]bool)
 	if len(options.Reality.ShortID) == 0 {

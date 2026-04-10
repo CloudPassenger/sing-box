@@ -101,7 +101,14 @@ icon: material/new-box
     "short_id": [
       "0123456789abcdef"
     ],
-    "max_time_difference": "1m"
+    "max_time_difference": "1m",
+    "fallback_limit": {
+      "sampling_period": "1s",
+      "down_mbps": 4,
+      "down_burst_mbps": 6,
+      "up_mbps": 4,
+      "up_burst_mbps": 6
+    }
   }
 }
 ```
@@ -832,3 +839,52 @@ A hexadecimal string with zero to eight digits.
 The maximum time difference between the server and the client.
 
 Check disabled if empty.
+
+#### fallback_limit
+
+==Server only==
+
+Optional fallback traffic rate limit configuration.
+
+This limit only applies to connections that fail REALITY verification and are forwarded to the configured `handshake`
+server as ordinary TLS fallback traffic.
+
+#### fallback_limit.sampling_period
+
+==Server only==
+
+Sampling period used to derive the token bucket burst size.
+
+Default is `1s`.
+
+#### fallback_limit.down_mbps
+
+==Server only==
+
+Download rate limit for fallback traffic, in Mbps.
+
+This value is applied to traffic flowing from the fallback server back to the client.
+
+#### fallback_limit.down_burst_mbps
+
+==Server only==
+
+Fallback download burst size, expressed in Mbps over one `sampling_period`.
+
+Requires `down_mbps`. If empty, the burst size defaults to `down_mbps * sampling_period`.
+
+#### fallback_limit.up_mbps
+
+==Server only==
+
+Upload rate limit for fallback traffic, in Mbps.
+
+This value is applied to traffic flowing from the client to the fallback server.
+
+#### fallback_limit.up_burst_mbps
+
+==Server only==
+
+Fallback upload burst size, expressed in Mbps over one `sampling_period`.
+
+Requires `up_mbps`. If empty, the burst size defaults to `up_mbps * sampling_period`.
