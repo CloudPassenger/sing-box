@@ -5,7 +5,8 @@ icon: material/new-box
 !!! quote "Changes in sing-box 1.13.0"
 
     :material-plus: [bypass](#bypass)  
-    :material-alert: [reject](#reject)
+    :material-alert: [reject](#reject)  
+    :material-plus: [limit-options](#limit-options)
 
 !!! quote "Changes in sing-box 1.12.0"
 
@@ -242,6 +243,100 @@ The fallback value used when TLS segmentation cannot automatically determine the
 !!! question "Since sing-box 1.12.0"
 
 Fragment TLS handshake into multiple TLS records to bypass firewalls.
+
+### limit-options
+
+!!! question "Since sing-box 1.13.0"
+
+```json
+{
+  "action": "limit-options",
+  "scope": "",
+  "clients": 0,
+  "down_mbps": 0,
+  "up_mbps": 0,
+  "total_mbps": 0,
+  "sampling_period": "",
+  "down_burst_mbps": 0,
+  "up_burst_mbps": 0,
+  "total_burst_mbps": 0
+}
+```
+
+`limit-options` applies connection and traffic limits to the matched rule, then continues matching later rules.
+
+The limits are applied to the final routed TCP connection or packet connection.
+
+Multiple matched `limit-options` actions are cumulative. All of them stay active, and the effective result is the strict intersection of the matched limits.
+
+#### scope
+
+Limit scope. Available values are:
+
+- `source_ip`: group by source IP address
+- `user`: group by authenticated user metadata
+- `inbound`: group by inbound tag
+- `rule`: group by the matched rule itself
+
+If empty, the default scope is inferred in this order:
+
+- `user` when the rule contains exactly one `user` or `auth_user` matcher
+- `inbound` when the rule contains exactly one `inbound` matcher
+- `rule` when `clients` is set but no user or inbound identity can be inferred
+- `source_ip` otherwise
+
+For server-side proxy account limits, use `auth_user` in the rule to match the authenticated proxy user.
+The `user` rule item matches the local process user instead.
+
+#### clients
+
+Maximum number of active source IPs allowed inside the selected `scope`.
+
+Not available with `scope=source_ip`.
+
+#### down_mbps
+
+Downstream bandwidth limit in Mbps.
+
+#### up_mbps
+
+Upstream bandwidth limit in Mbps.
+
+#### total_mbps
+
+Combined bandwidth limit in Mbps.
+
+At least one of `clients`, `down_mbps`, `up_mbps`, or `total_mbps` is required.
+
+#### sampling_period
+
+Sampling period for the internal token bucket.
+
+`1s` is used by default.
+
+#### down_burst_mbps
+
+Downstream burst size in Mbps for one `sampling_period`.
+
+Requires `down_mbps`.
+
+If empty, the burst size defaults to `down_mbps * sampling_period`.
+
+#### up_burst_mbps
+
+Upstream burst size in Mbps for one `sampling_period`.
+
+Requires `up_mbps`.
+
+If empty, the burst size defaults to `up_mbps * sampling_period`.
+
+#### total_burst_mbps
+
+Combined burst size in Mbps for one `sampling_period`.
+
+Requires `total_mbps`.
+
+If empty, the burst size defaults to `total_mbps * sampling_period`.
 
 ### sniff
 
