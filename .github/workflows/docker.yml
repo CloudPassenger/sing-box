@@ -14,8 +14,12 @@ on:
       - published
   workflow_dispatch:
     inputs:
-      tag:
-        description: "Version to build, without the v prefix"
+      sing_box_version:
+        description: "sing-box version"
+        required: true
+        type: string
+      superpower_version:
+        description: "superpower version"
         required: true
         type: string
 
@@ -43,11 +47,11 @@ jobs:
       - name: Get commit to build
         id: ref
         run: |-
-          if [[ -z "${{ github.event.inputs.tag }}" ]]; then
+          if [[ "${{ github.event_name }}" != 'workflow_dispatch' ]]; then
             ref="${{ github.ref_name }}"
             image_tag="$ref"
           else
-            image_tag="v${{ github.event.inputs.tag }}"
+            image_tag="v${{ inputs.sing_box_version }}-superpower-${{ inputs.superpower_version }}"
             ref="$image_tag"
           fi
           echo "ref=$ref"
@@ -186,11 +190,11 @@ jobs:
       - name: Get commit to build
         id: ref
         run: |-
-          if [[ -z "${{ github.event.inputs.tag }}" ]]; then
+          if [[ "${{ github.event_name }}" != 'workflow_dispatch' ]]; then
             ref="${{ github.ref_name }}"
             image_tag="$ref"
           else
-            image_tag="v${{ github.event.inputs.tag }}"
+            image_tag="v${{ inputs.sing_box_version }}-superpower-${{ inputs.superpower_version }}"
             ref="$image_tag"
           fi
           echo "ref=$ref"
@@ -266,11 +270,11 @@ jobs:
       - name: Get commit to build
         id: ref
         run: |-
-          if [[ -z "${{ github.event.inputs.tag }}" ]]; then
+          if [[ "${{ github.event_name }}" != 'workflow_dispatch' ]]; then
             ref="${{ github.ref_name }}"
             image_tag="$ref"
           else
-            image_tag="v${{ github.event.inputs.tag }}"
+            image_tag="v${{ inputs.sing_box_version }}-superpower-${{ inputs.superpower_version }}"
             ref="$image_tag"
           fi
           echo "ref=$ref"
