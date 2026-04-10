@@ -1,5 +1,9 @@
 name: Publish Docker Images
 
+permissions:
+  contents: read
+  packages: write
+
 on:
   #push:
   #  branches:
@@ -11,7 +15,9 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "The tag version you want to build"
+        description: "Version to build, without the v prefix"
+        required: true
+        type: string
 
 jobs:
   build_binary:
@@ -39,11 +45,15 @@ jobs:
         run: |-
           if [[ -z "${{ github.event.inputs.tag }}" ]]; then
             ref="${{ github.ref_name }}"
+            image_tag="$ref"
           else
-            ref="${{ github.event.inputs.tag }}"
+            image_tag="v${{ github.event.inputs.tag }}"
+            ref="$image_tag"
           fi
           echo "ref=$ref"
+          echo "image_tag=$image_tag"
           echo "ref=$ref" >> $GITHUB_OUTPUT
+          echo "image_tag=$image_tag" >> $GITHUB_OUTPUT
       - name: Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
         with:
@@ -178,11 +188,15 @@ jobs:
         run: |-
           if [[ -z "${{ github.event.inputs.tag }}" ]]; then
             ref="${{ github.ref_name }}"
+            image_tag="$ref"
           else
-            ref="${{ github.event.inputs.tag }}"
+            image_tag="v${{ github.event.inputs.tag }}"
+            ref="$image_tag"
           fi
           echo "ref=$ref"
+          echo "image_tag=$image_tag"
           echo "ref=$ref" >> $GITHUB_OUTPUT
+          echo "image_tag=$image_tag" >> $GITHUB_OUTPUT
       - name: Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
         with:
@@ -254,11 +268,15 @@ jobs:
         run: |-
           if [[ -z "${{ github.event.inputs.tag }}" ]]; then
             ref="${{ github.ref_name }}"
+            image_tag="$ref"
           else
-            ref="${{ github.event.inputs.tag }}"
+            image_tag="v${{ github.event.inputs.tag }}"
+            ref="$image_tag"
           fi
           echo "ref=$ref"
+          echo "image_tag=$image_tag"
           echo "ref=$ref" >> $GITHUB_OUTPUT
+          echo "image_tag=$image_tag" >> $GITHUB_OUTPUT
       - name: Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
         with:
@@ -289,10 +307,10 @@ jobs:
         run: |
           docker buildx imagetools create \
             -t "${{ env.REGISTRY_IMAGE }}:${{ env.DOCKER_TAG }}" \
-            -t "${{ env.REGISTRY_IMAGE }}:${{ steps.ref.outputs.ref }}" \
+            -t "${{ env.REGISTRY_IMAGE }}:${{ steps.ref.outputs.image_tag }}" \
             $(printf '${{ env.REGISTRY_IMAGE }}@sha256:%s ' *)
       - name: Inspect image
         if: github.event_name != 'push'
         run: |
           docker buildx imagetools inspect ${{ env.REGISTRY_IMAGE }}:${{ env.DOCKER_TAG }}
-          docker buildx imagetools inspect ${{ env.REGISTRY_IMAGE }}:${{ steps.ref.outputs.ref }}
+          docker buildx imagetools inspect ${{ env.REGISTRY_IMAGE }}:${{ steps.ref.outputs.image_tag }}
