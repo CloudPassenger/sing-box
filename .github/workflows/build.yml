@@ -3,8 +3,12 @@ name: Build
 on:
   workflow_dispatch:
     inputs:
-      version:
-        description: "Version name"
+      sing_box_version:
+        description: "sing-box version"
+        required: true
+        type: string
+      superpower_version:
+        description: "superpower version"
         required: true
         type: string
       build:
@@ -70,8 +74,9 @@ jobs:
       - name: Check input version
         if: github.event_name == 'workflow_dispatch'
         run: |-
-          echo "version=${{ inputs.version }}"
-          echo "version=${{ inputs.version }}" >> "$GITHUB_ENV"
+          version="${{ inputs.sing_box_version }}-superpower-${{ inputs.superpower_version }}"
+          echo "version=${version}"
+          echo "version=${version}" >> "$GITHUB_ENV"
       - name: Calculate version
         if: github.event_name != 'workflow_dispatch'
         run: |-
