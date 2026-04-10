@@ -164,5 +164,7 @@ require (
 	golang.zx2c4.com/wireguard/windows v0.5.3 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251202230838-ff82c1b0f217 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	lukechampine.com/blake3 v1.3.0 // indirect
+	lukechampine.com/blake3 v1.4.1 // indirect
 )
+
+replace github.com/sagernet/sing-vmess v0.2.8-0.20250909125414-3aed155119a1 => github.com/CloudPassenger/sing-vmess v0.0.0-20260409002451-b6c88ce449d0
