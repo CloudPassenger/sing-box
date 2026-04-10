@@ -5,7 +5,9 @@ icon: material/new-box
 !!! quote "sing-box 1.13.0 中的更改"
 
     :material-plus: [disable_tcp_keep_alive](#disable_tcp_keep_alive)  
-    :material-alert: [tcp_keep_alive](#tcp_keep_alive)
+    :material-alert: [tcp_keep_alive](#tcp_keep_alive)  
+    :material-plus: [proxy_protocol](#proxy_protocol)  
+    :material-plus: [proxy_protocol_accept_no_header](#proxy_protocol_accept_no_header)
 
 !!! quote "sing-box 1.12.0 中的更改"
 
@@ -40,6 +42,8 @@ icon: material/new-box
   "udp_fragment": false,
   "udp_timeout": "",
   "detour": "",
+  "proxy_protocol": false,
+  "proxy_protocol_accept_no_header": false,
 
   // 废弃的
   
@@ -146,6 +150,30 @@ UDP NAT 过期时间。
 如果设置，连接将被转发到指定的入站。
 
 需要目标入站支持，参阅 [注入支持](/zh/configuration/inbound/#字段)。
+
+#### proxy_protocol
+
+!!! question "自 sing-box 1.13.0 起"
+
+在 TCP 监听器上启用接收 Proxy Protocol 头。
+
+同时接受 Proxy Protocol v1 和 v2。
+
+该选项仅对 TCP 流生效。
+
+!!! warning ""
+
+    Proxy Protocol 不带认证能力。只应在该端口仅会被受信任上游代理或负载均衡访问时启用。
+
+#### proxy_protocol_accept_no_header
+
+!!! question "自 sing-box 1.13.0 起"
+
+允许不带 Proxy Protocol 头的 TCP 连接。
+
+启用后，没有 Proxy Protocol 头的连接会回退为使用套接字对端地址。
+
+该选项要求同时启用 `proxy_protocol`。
 
 #### sniff
 
