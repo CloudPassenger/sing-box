@@ -91,7 +91,7 @@ func (r *Router) routeConnection(ctx context.Context, conn net.Conn, metadata ad
 	if deadline.NeedAdditionalReadDeadline(conn) {
 		conn = deadline.NewConn(conn)
 	}
-	selectedRule, _, buffers, _, err := r.matchRule(ctx, &metadata, false, false, conn, nil)
+	selectedRule, _, limitActions, buffers, _, err := r.matchRule(ctx, &metadata, false, false, conn, nil)
 	if err != nil {
 		return err
 	}
@@ -151,6 +151,12 @@ func (r *Router) routeConnection(ctx context.Context, conn net.Conn, metadata ad
 	}
 	for _, tracker := range r.trackers {
 		conn = tracker.RoutedConnection(ctx, conn, metadata, selectedRule, selectedOutbound)
+	}
+	for _, limitAction := range limitActions {
+		conn, err = limitAction.WrapConnection(ctx, conn, &metadata)
+		if err != nil {
+			return err
+		}
 	}
 	if outboundHandler, isHandler := selectedOutbound.(adapter.ConnectionHandlerEx); isHandler {
 		outboundHandler.NewConnectionEx(ctx, conn, metadata, onClose)
@@ -220,7 +226,7 @@ func (r *Router) routePacketConnection(ctx context.Context, conn N.PacketConn, m
 		conn = deadline.NewPacketConn(bufio.NewNetPacketConn(conn))
 	}*/
 
-	selectedRule, _, _, packetBuffers, err := r.matchRule(ctx, &metadata, false, false, nil, conn)
+	selectedRule, _, limitActions, _, packetBuffers, err := r.matchRule(ctx, &metadata, false, false, nil, conn)
 	if err != nil {
 		return err
 	}
@@ -281,6 +287,12 @@ func (r *Router) routePacketConnection(ctx context.Context, conn N.PacketConn, m
 	if metadata.FakeIP {
 		conn = bufio.NewNATPacketConn(bufio.NewNetPacketConn(conn), metadata.OriginDestination, metadata.Destination)
 	}
+	for _, limitAction := range limitActions {
+		conn, err = limitAction.WrapPacketConnection(ctx, conn, &metadata)
+		if err != nil {
+			return err
+		}
+	}
 	if outboundHandler, isHandler := selectedOutbound.(adapter.PacketConnectionHandlerEx); isHandler {
 		outboundHandler.NewPacketConnectionEx(ctx, conn, metadata, onClose)
 	} else {
@@ -290,7 +302,7 @@ func (r *Router) routePacketConnection(ctx context.Context, conn N.PacketConn, m
 }
 
 func (r *Router) PreMatch(metadata adapter.InboundContext, routeContext tun.DirectRouteContext, timeout time.Duration, supportBypass bool) (tun.DirectRouteDestination, error) {
-	selectedRule, _, _, _, err := r.matchRule(r.ctx, &metadata, true, supportBypass, nil, nil)
+	selectedRule, _, _, _, _, err := r.matchRule(r.ctx, &metadata, true, supportBypass, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -405,6 +417,7 @@ func (r *Router) matchRule(
 	inputConn net.Conn, inputPacketConn N.PacketConn,
 ) (
 	selectedRule adapter.Rule, selectedRuleIndex int,
+	limitActions []*R.RuleActionLimitOptions,
 	buffers []*buf.Buffer, packetBuffers []*N.PacketBuffer, fatalErr error,
 ) {
 	r.searchProcessInfo(ctx, metadata)
@@ -460,15 +473,17 @@ match:
 				}
 			}
 		}
+		rawAction := currentRule.Action()
 		var routeOptions *R.RuleActionRouteOptions
-		switch action := currentRule.Action().(type) {
+		switch action := rawAction.(type) {
 		case *R.RuleActionRoute:
 			routeOptions = &action.RuleActionRouteOptions
 		case *R.RuleActionRouteOptions:
 			routeOptions = action
+		case *R.RuleActionBypass:
+			routeOptions = &action.RuleActionRouteOptions
 		}
 		if routeOptions != nil {
-			// TODO: add nat
 			if (routeOptions.OverrideAddress.IsValid() || routeOptions.OverridePort > 0) && !metadata.RouteOriginalDestination.IsValid() {
 				metadata.RouteOriginalDestination = metadata.Destination
 			}
@@ -516,7 +531,7 @@ match:
 				metadata.TLSRecordFragment = true
 			}
 		}
-		switch action := currentRule.Action().(type) {
+		switch action := rawAction.(type) {
 		case *R.RuleActionSniff:
 			if !preMatch {
 				newBuffer, newPacketBuffers, newErr := r.actionSniff(ctx, metadata, action, inputConn, inputPacketConn, buffers, packetBuffers)
@@ -539,8 +554,11 @@ match:
 			if fatalErr != nil {
 				return
 			}
+		case *R.RuleActionLimitOptions:
+			limitActions = append(limitActions, action)
+			continue match
 		}
-		actionType := currentRule.Action().Type()
+		actionType := rawAction.Type()
 		if actionType == C.RuleActionTypeRoute ||
 			actionType == C.RuleActionTypeReject ||
 			actionType == C.RuleActionTypeHijackDNS {
@@ -549,7 +567,7 @@ match:
 			break match
 		}
 		if actionType == C.RuleActionTypeBypass {
-			bypassAction := currentRule.Action().(*R.RuleActionBypass)
+			bypassAction := rawAction.(*R.RuleActionBypass)
 			if !supportBypass && bypassAction.Outbound == "" {
 				continue match
 			}
