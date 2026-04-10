@@ -22,6 +22,7 @@ type _RuleAction struct {
 	RejectOptions       RejectActionOptions       `json:"-"`
 	SniffOptions        RouteActionSniff          `json:"-"`
 	ResolveOptions      RouteActionResolve        `json:"-"`
+	LimitOptions        LimitActionOptions        `json:"-"`
 }
 
 type RuleAction _RuleAction
@@ -49,6 +50,8 @@ func (r RuleAction) MarshalJSON() ([]byte, error) {
 		v = r.SniffOptions
 	case C.RuleActionTypeResolve:
 		v = r.ResolveOptions
+	case C.RuleActionTypeLimitOptions:
+		v = r.LimitOptions
 	default:
 		return nil, E.New("unknown rule action: " + r.Action)
 	}
@@ -82,6 +85,8 @@ func (r *RuleAction) UnmarshalJSON(data []byte) error {
 		v = &r.SniffOptions
 	case C.RuleActionTypeResolve:
 		v = &r.ResolveOptions
+	case C.RuleActionTypeLimitOptions:
+		v = &r.LimitOptions
 	default:
 		return E.New("unknown rule action: " + r.Action)
 	}
@@ -312,6 +317,78 @@ type RouteActionResolve struct {
 	DisableCache bool                  `json:"disable_cache,omitempty"`
 	RewriteTTL   *uint32               `json:"rewrite_ttl,omitempty"`
 	ClientSubnet *badoption.Prefixable `json:"client_subnet,omitempty"`
+}
+
+type _LimitActionOptions struct {
+	Scope          string             `json:"scope,omitempty"`
+	Clients        uint32             `json:"clients,omitempty"`
+	DownMbps       *float64           `json:"down_mbps,omitempty"`
+	UpMbps         *float64           `json:"up_mbps,omitempty"`
+	TotalMbps      *float64           `json:"total_mbps,omitempty"`
+	SamplingPeriod badoption.Duration `json:"sampling_period,omitempty"`
+	DownBurstMbps  *float64           `json:"down_burst_mbps,omitempty"`
+	UpBurstMbps    *float64           `json:"up_burst_mbps,omitempty"`
+	TotalBurstMbps *float64           `json:"total_burst_mbps,omitempty"`
+}
+
+type LimitActionOptions _LimitActionOptions
+
+func (l *LimitActionOptions) UnmarshalJSON(data []byte) error {
+	err := json.Unmarshal(data, (*_LimitActionOptions)(l))
+	if err != nil {
+		return err
+	}
+	if l.Clients == 0 && l.DownMbps == nil && l.UpMbps == nil && l.TotalMbps == nil {
+		return E.New("empty limit-options action")
+	}
+	if l.SamplingPeriod < 0 {
+		return E.New("invalid sampling_period")
+	}
+	if l.Clients == 0 && l.DownMbps == nil && l.UpMbps == nil && l.TotalMbps == nil {
+		return E.New("missing effective limit fields")
+	}
+	if l.DownMbps != nil && *l.DownMbps <= 0 {
+		return E.New("invalid down_mbps")
+	}
+	if l.UpMbps != nil && *l.UpMbps <= 0 {
+		return E.New("invalid up_mbps")
+	}
+	if l.TotalMbps != nil && *l.TotalMbps <= 0 {
+		return E.New("invalid total_mbps")
+	}
+	if l.DownBurstMbps != nil {
+		if l.DownMbps == nil {
+			return E.New("down_burst_mbps requires down_mbps")
+		}
+		if *l.DownBurstMbps <= 0 {
+			return E.New("invalid down_burst_mbps")
+		}
+	}
+	if l.UpBurstMbps != nil {
+		if l.UpMbps == nil {
+			return E.New("up_burst_mbps requires up_mbps")
+		}
+		if *l.UpBurstMbps <= 0 {
+			return E.New("invalid up_burst_mbps")
+		}
+	}
+	if l.TotalBurstMbps != nil {
+		if l.TotalMbps == nil {
+			return E.New("total_burst_mbps requires total_mbps")
+		}
+		if *l.TotalBurstMbps <= 0 {
+			return E.New("invalid total_burst_mbps")
+		}
+	}
+	switch l.Scope {
+	case "", C.LimitScopeSourceIP, C.LimitScopeUser, C.LimitScopeInbound, C.LimitScopeRule:
+	default:
+		return E.New("invalid scope: ", l.Scope)
+	}
+	if l.Scope == C.LimitScopeSourceIP && l.Clients > 0 {
+		return E.New("clients cannot be used with scope=source_ip")
+	}
+	return nil
 }
 
 type DNSRouteActionPredefined struct {
