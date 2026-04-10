@@ -1,0 +1,28 @@
+{
+  "log": {
+    "level": "info"
+  },
+  "inbounds": [
+    {
+      "type": "direct",
+      "tag": "alice-forward-ss",
+      "listen": "127.0.0.1",
+      "listen_port": 19190,
+      "override_address": "127.0.0.1",
+      "override_port": 18082
+    }
+  ],
+  "outbounds": [
+    {
+      "type": "shadowsocks",
+      "tag": "ss-out",
+      "server": "127.0.0.1",
+      "server_port": 24611,
+      "method": "aes-128-gcm",
+      "password": "alice-native-udp-pass"
+    }
+  ],
+  "route": {
+    "final": "ss-out"
+  }
+}
