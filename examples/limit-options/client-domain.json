@@ -1,0 +1,56 @@
+{
+  "log": {
+    "level": "info"
+  },
+  "inbounds": [
+    {
+      "type": "mixed",
+      "tag": "mixed-in",
+      "listen": "127.0.0.1",
+      "listen_port": 2093
+    }
+  ],
+  "outbounds": [
+    {
+      "type": "vless",
+      "tag": "vless-out",
+      "server": "127.0.0.1",
+      "server_port": 24510,
+      "uuid": "9b65b7e1-04c8-4717-8f45-2aa61fd25937",
+      "tls": {
+        "enabled": true,
+        "server_name": "localhost",
+        "insecure": true,
+        "alpn": [
+          "h2"
+        ]
+      }
+    },
+    {
+      "type": "direct",
+      "tag": "direct"
+    }
+  ],
+  "route": {
+    "rules": [
+      {
+        "domain_suffix": [
+          "localhost"
+        ],
+        "action": "limit-options",
+        "scope": "rule",
+        "total_mbps": 4,
+        "sampling_period": "1s",
+        "total_burst_mbps": 6
+      },
+      {
+        "domain_suffix": [
+          "localhost"
+        ],
+        "action": "route",
+        "outbound": "vless-out"
+      }
+    ],
+    "final": "direct"
+  }
+}

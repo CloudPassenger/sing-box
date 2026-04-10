@@ -1,0 +1,35 @@
+{
+  "log": {
+    "level": "info"
+  },
+  "inbounds": [
+    {
+      "type": "direct",
+      "tag": "alice-forward",
+      "listen": "127.0.0.1",
+      "listen_port": 19090,
+      "override_address": "127.0.0.1",
+      "override_port": 18082
+    }
+  ],
+  "outbounds": [
+    {
+      "type": "vless",
+      "tag": "vless-out",
+      "server": "127.0.0.1",
+      "server_port": 24511,
+      "uuid": "9b65b7e1-04c8-4717-8f45-2aa61fd25937",
+      "tls": {
+        "enabled": true,
+        "server_name": "localhost",
+        "insecure": true,
+        "alpn": [
+          "h2"
+        ]
+      }
+    }
+  ],
+  "route": {
+    "final": "vless-out"
+  }
+}

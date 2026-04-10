@@ -1,0 +1,60 @@
+{
+  "log": {
+    "level": "info"
+  },
+  "inbounds": [
+    {
+      "type": "vless",
+      "tag": "vless-in",
+      "listen": "127.0.0.1",
+      "listen_port": 24512,
+      "users": [
+        {
+          "name": "alice",
+          "uuid": "9b65b7e1-04c8-4717-8f45-2aa61fd25937"
+        }
+      ],
+      "tls": {
+        "enabled": true,
+        "server_name": "localhost",
+        "alpn": [
+          "h2"
+        ],
+        "certificate_path": "examples/xhttp/cert.pem",
+        "key_path": "examples/xhttp/key.pem"
+      }
+    }
+  ],
+  "outbounds": [
+    {
+      "type": "direct",
+      "tag": "direct"
+    }
+  ],
+  "route": {
+    "rules": [
+      {
+        "auth_user": [
+          "alice"
+        ],
+        "action": "limit-options",
+        "scope": "user",
+        "clients": 2,
+        "total_mbps": 12,
+        "sampling_period": "1s",
+        "total_burst_mbps": 16
+      },
+      {
+        "domain_suffix": [
+          "localhost"
+        ],
+        "action": "limit-options",
+        "scope": "rule",
+        "down_mbps": 4,
+        "sampling_period": "1s",
+        "down_burst_mbps": 6
+      }
+    ],
+    "final": "direct"
+  }
+}
