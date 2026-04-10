@@ -57,7 +57,7 @@ type RuleItem interface {
 }
 
 func NewDefaultRule(ctx context.Context, logger log.ContextLogger, options option.DefaultRule) (*DefaultRule, error) {
-	action, err := NewRuleAction(ctx, logger, options.RuleAction)
+	action, err := NewRuleAction(ctx, logger, options.RuleAction, inferDefaultLimitScope(options))
 	if err != nil {
 		return nil, E.Cause(err, "action")
 	}
@@ -296,7 +296,7 @@ func (r *LogicalRule) matchStates(metadata *adapter.InboundContext) ruleMatchSta
 }
 
 func NewLogicalRule(ctx context.Context, logger log.ContextLogger, options option.LogicalRule) (*LogicalRule, error) {
-	action, err := NewRuleAction(ctx, logger, options.RuleAction)
+	action, err := NewRuleAction(ctx, logger, options.RuleAction, inferLogicalLimitScope(options))
 	if err != nil {
 		return nil, E.Cause(err, "action")
 	}
@@ -323,4 +323,24 @@ func NewLogicalRule(ctx context.Context, logger log.ContextLogger, options optio
 		rule.rules[i] = subRule
 	}
 	return rule, nil
+}
+
+func inferDefaultLimitScope(options option.DefaultRule) string {
+	if len(options.User) == 1 || len(options.AuthUser) == 1 {
+		return C.LimitScopeUser
+	}
+	if len(options.Inbound) == 1 {
+		return C.LimitScopeInbound
+	}
+	if options.RuleAction.Action == C.RuleActionTypeLimitOptions && options.RuleAction.LimitOptions.Clients > 0 {
+		return C.LimitScopeRule
+	}
+	return C.LimitScopeSourceIP
+}
+
+func inferLogicalLimitScope(options option.LogicalRule) string {
+	if options.RuleAction.Action == C.RuleActionTypeLimitOptions && options.RuleAction.LimitOptions.Clients > 0 {
+		return C.LimitScopeRule
+	}
+	return C.LimitScopeSourceIP
 }

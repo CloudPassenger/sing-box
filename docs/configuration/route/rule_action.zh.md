@@ -5,7 +5,8 @@ icon: material/new-box
 !!! quote "sing-box 1.13.0 中的更改"
 
     :material-plus: [bypass](#bypass)  
-    :material-alert: [reject](#reject)
+    :material-alert: [reject](#reject)  
+    :material-plus: [limit-options](#limit-options)
 
 !!! quote "sing-box 1.12.0 中的更改"
 
@@ -231,6 +232,100 @@ UDP 连接超时时间。
 !!! question "自 sing-box 1.12.0 起"
 
 通过分段 TLS 握手数据包到多个 TLS 记录来绕过防火墙检测。
+
+### limit-options
+
+!!! question "自 sing-box 1.13.0 起"
+
+```json
+{
+  "action": "limit-options",
+  "scope": "",
+  "clients": 0,
+  "down_mbps": 0,
+  "up_mbps": 0,
+  "total_mbps": 0,
+  "sampling_period": "",
+  "down_burst_mbps": 0,
+  "up_burst_mbps": 0,
+  "total_burst_mbps": 0
+}
+```
+
+`limit-options` 为匹配到的规则设置连接数和流量限制，然后继续匹配后续规则。
+
+这些限制会在最终路由到的 TCP 连接或数据包连接上生效。
+
+多个匹配到的 `limit-options` 会累积生效，最终结果为所有限制的更严格交集。
+
+#### scope
+
+限制作用域。可用值为：
+
+- `source_ip`: 按源 IP 地址分组
+- `user`: 按认证用户元数据分组
+- `inbound`: 按入站标签分组
+- `rule`: 按命中的规则自身分组
+
+如果为空，将按以下顺序推导默认值：
+
+- 当规则中恰好包含一个 `user` 或 `auth_user` 条件时使用 `user`
+- 当规则中恰好包含一个 `inbound` 条件时使用 `inbound`
+- 当设置了 `clients`，但无法推导出用户或入站身份时使用 `rule`
+- 其他情况使用 `source_ip`
+
+如果要按服务端代理账号限速，应在规则中使用 `auth_user` 匹配认证用户。
+`user` 规则项匹配的是本地进程用户名，而不是代理认证用户名。
+
+#### clients
+
+当前 `scope` 下允许同时活跃的不同源 IP 数量上限。
+
+不能与 `scope=source_ip` 一起使用。
+
+#### down_mbps
+
+下行带宽限制，单位为 Mbps。
+
+#### up_mbps
+
+上行带宽限制，单位为 Mbps。
+
+#### total_mbps
+
+总带宽限制，单位为 Mbps。
+
+`clients`、`down_mbps`、`up_mbps` 或 `total_mbps` 至少需要设置一个。
+
+#### sampling_period
+
+内部令牌桶的采样周期。
+
+默认使用 `1s`。
+
+#### down_burst_mbps
+
+单个 `sampling_period` 内允许的下行突发大小，单位为 Mbps。
+
+需要先设置 `down_mbps`。
+
+如果为空，突发大小默认等于 `down_mbps * sampling_period`。
+
+#### up_burst_mbps
+
+单个 `sampling_period` 内允许的上行突发大小，单位为 Mbps。
+
+需要先设置 `up_mbps`。
+
+如果为空，突发大小默认等于 `up_mbps * sampling_period`。
+
+#### total_burst_mbps
+
+单个 `sampling_period` 内允许的总突发大小，单位为 Mbps。
+
+需要先设置 `total_mbps`。
+
+如果为空，突发大小默认等于 `total_mbps * sampling_period`。
 
 ### sniff
 
