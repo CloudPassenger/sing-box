@@ -1,0 +1,57 @@
+{
+  "log": {
+    "level": "info"
+  },
+  "inbounds": [
+    {
+      "type": "shadowsocks",
+      "tag": "ss-in",
+      "listen": "127.0.0.1",
+      "listen_port": 24611,
+      "method": "aes-128-gcm",
+      "users": [
+        {
+          "name": "alice",
+          "password": "alice-native-udp-pass"
+        },
+        {
+          "name": "bob",
+          "password": "bob-native-udp-pass"
+        }
+      ]
+    }
+  ],
+  "outbounds": [
+    {
+      "type": "direct",
+      "tag": "direct"
+    }
+  ],
+  "route": {
+    "rules": [
+      {
+        "auth_user": [
+          "alice"
+        ],
+        "action": "limit-options",
+        "scope": "user",
+        "clients": 1,
+        "total_mbps": 8,
+        "sampling_period": "1s",
+        "total_burst_mbps": 10
+      },
+      {
+        "auth_user": [
+          "bob"
+        ],
+        "action": "limit-options",
+        "scope": "user",
+        "clients": 2,
+        "total_mbps": 20,
+        "sampling_period": "1s",
+        "total_burst_mbps": 24
+      }
+    ],
+    "final": "direct"
+  }
+}
