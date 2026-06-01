@@ -89,9 +89,10 @@ func UnixDestination(address Address) Destination {
 // NetAddr returns the network address in this Destination in string form.
 func (d Destination) NetAddr() string {
 	addr := ""
-	if d.Network == Network_TCP || d.Network == Network_UDP {
+	switch d.Network {
+	case Network_TCP, Network_UDP:
 		addr = d.Address.String() + ":" + d.Port.String()
-	} else if d.Network == Network_UNIX {
+	case Network_UNIX:
 		addr = d.Address.String()
 	}
 	return addr
