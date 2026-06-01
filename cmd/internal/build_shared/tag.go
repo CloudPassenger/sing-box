@@ -57,12 +57,10 @@ func TestFlightVersion(version badversion.Version) string {
 func splitForkTag(tag string) (string, string, bool) {
 	tag = strings.TrimPrefix(tag, "v")
 	const forkSeparator = "-superpower-"
-	separatorIndex := strings.Index(tag, forkSeparator)
-	if separatorIndex < 0 {
+	upstreamVersion, forkVersion, ok := strings.Cut(tag, forkSeparator)
+	if !ok {
 		return "", "", false
 	}
-	upstreamVersion := tag[:separatorIndex]
-	forkVersion := tag[separatorIndex+len(forkSeparator):]
 	if upstreamVersion == "" || forkVersion == "" {
 		return "", "", false
 	}
