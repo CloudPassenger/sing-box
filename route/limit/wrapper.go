@@ -170,10 +170,7 @@ func waitLimiters(ctx context.Context, n int, limiters ...*rate.Limiter) error {
 			burst = remaining
 		}
 		for remaining > 0 {
-			chunk := remaining
-			if chunk > burst {
-				chunk = burst
-			}
+			chunk := min(remaining, burst)
 			err := limiter.WaitN(ctx, chunk)
 			if err != nil {
 				return err
@@ -190,10 +187,7 @@ func writeLimited(ctx context.Context, conn net.Conn, p []byte, limiters ...*rat
 		return conn.Write(p)
 	}
 	for len(p) > 0 {
-		end := len(p)
-		if end > burst {
-			end = burst
-		}
+		end := min(len(p), burst)
 		err = waitLimiters(ctx, end, limiters...)
 		if err != nil {
 			return
