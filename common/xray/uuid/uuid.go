@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"crypto/sha1"
 	"encoding/hex"
+	"strings"
 
 	"github.com/sagernet/sing-box/common/xray"
 	E "github.com/sagernet/sing/common/exceptions"
@@ -16,16 +17,18 @@ type UUID [16]byte
 
 // String returns the string representation of this UUID.
 func (u *UUID) String() string {
-	bytes := u.Bytes()
-	result := hex.EncodeToString(bytes[0 : byteGroups[0]/2])
+	raw := u.Bytes()
+	var builder strings.Builder
+	builder.Grow(36)
+	builder.WriteString(hex.EncodeToString(raw[0 : byteGroups[0]/2]))
 	start := byteGroups[0] / 2
-	for i := 1; i < len(byteGroups); i++ {
-		nBytes := byteGroups[i] / 2
-		result += "-"
-		result += hex.EncodeToString(bytes[start : start+nBytes])
+	for _, byteGroup := range byteGroups[1:] {
+		nBytes := byteGroup / 2
+		builder.WriteByte('-')
+		builder.WriteString(hex.EncodeToString(raw[start : start+nBytes]))
 		start += nBytes
 	}
-	return result
+	return builder.String()
 }
 
 // Bytes returns the bytes representation of this UUID.
