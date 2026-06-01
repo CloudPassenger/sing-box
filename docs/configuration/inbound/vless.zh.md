@@ -16,7 +16,8 @@
   ],
   "tls": {},
   "multiplex": {},
-  "transport": {}
+  "transport": {},
+  "decryption": ""
 }
 ```
 
@@ -45,6 +46,23 @@ VLESS 子协议。
 可用值：
 
 * `xtls-rprx-vision`
+
+#### decryption
+
+VLESS 加密解密密钥。
+
+使用 `sing-box generate vless-enc` 生成密钥对。
+
+密钥格式为 `mlkem768x25519plus.native.<ttl>.<私钥>`。
+
+| 算法         | 命令                             |
+|--------------|----------------------------------|
+| X25519       | `sing-box generate vless-enc`    |
+| ML-KEM-768   | `sing-box generate vless-enc -m` |
+
+!!! note ""
+
+    设置环境变量 `SING_VMESS_ENCRYPTION_DISABLE_AES=1` 以禁用 AES。
 
 #### tls
 
