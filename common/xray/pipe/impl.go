@@ -40,9 +40,7 @@ type pipe struct {
 	state       state
 }
 
-var (
-	errBufferFull = errors.New("buffer full")
-)
+var errBufferFull = errors.New("buffer full")
 
 func (p *pipe) Len() int32 {
 	data := p.data
