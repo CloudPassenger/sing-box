@@ -143,10 +143,7 @@ func (c *DefaultDialerClient) PostPacket(ctx context.Context, url string, sessio
 		switch dataPlacement {
 		case option.PlacementHeader:
 			for i := 0; i < len(encodedData); i += chunkSize {
-				end := i + chunkSize
-				if end > len(encodedData) {
-					end = len(encodedData)
-				}
+				end := min(i+chunkSize, len(encodedData))
 				chunk := encodedData[i:end]
 				headerKey := fmt.Sprintf("%s-%d", key, i/chunkSize)
 				req.Header.Set(headerKey, chunk)
@@ -156,10 +153,7 @@ func (c *DefaultDialerClient) PostPacket(ctx context.Context, url string, sessio
 			req.Header.Set(key+"-Upstream", "1")
 		case option.PlacementCookie:
 			for i := 0; i < len(encodedData); i += chunkSize {
-				end := i + chunkSize
-				if end > len(encodedData) {
-					end = len(encodedData)
-				}
+				end := min(i+chunkSize, len(encodedData))
 				chunk := encodedData[i:end]
 				cookieName := fmt.Sprintf("%s_%d", key, i/chunkSize)
 				req.AddCookie(&http.Cookie{Name: cookieName, Value: chunk})

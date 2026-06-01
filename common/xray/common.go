@@ -10,13 +10,13 @@ func Must(err error) {
 }
 
 // Must2 panics if the second parameter is not nil, otherwise returns the first parameter.
-func Must2(v interface{}, err error) interface{} {
+func Must2(v any, err error) any {
 	Must(err)
 	return v
 }
 
 // Error2 returns the err from the 2nd parameter.
-func Error2(v interface{}, err error) error {
+func Error2(v any, err error) error {
 	return err
 }
 
