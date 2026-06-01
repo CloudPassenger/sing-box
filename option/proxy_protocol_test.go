@@ -23,8 +23,6 @@ func TestProxyProtocolVersionUnmarshal(t *testing.T) {
 		{name: "two", input: `{"proxy_protocol":2}`, expected: 2},
 	}
 	for _, test := range tests {
-		test := test
-
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
