@@ -1,5 +1,7 @@
 package net
 
+import "slices"
+
 type Network int32
 
 const (
@@ -24,10 +26,5 @@ func (n Network) SystemString() string {
 
 // HasNetwork returns true if the network list has a certain network.
 func HasNetwork(list []Network, network Network) bool {
-	for _, value := range list {
-		if value == network {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(list, network)
 }
