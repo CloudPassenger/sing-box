@@ -117,7 +117,7 @@ func (s *Server) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 			Header:    "X-Padding",
 		}
 	}
-	ApplyXPaddingToHeader(writer.Header(), config)
+	ApplyXPaddingToResponse(writer, config)
 	if request.Method == http.MethodOptions {
 		writer.WriteHeader(http.StatusOK)
 		return

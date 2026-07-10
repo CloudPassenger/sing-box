@@ -152,6 +152,17 @@ func ApplyPaddingToQuery(u *url.URL, key, value string) {
 	u.RawQuery = q.Encode()
 }
 
+func ApplyPaddingToResponseCookie(writer http.ResponseWriter, name, value string) {
+	if name == "" || value == "" {
+		return
+	}
+	http.SetCookie(writer, &http.Cookie{
+		Name:  name,
+		Value: value,
+		Path:  "/",
+	})
+}
+
 func ApplyXPaddingToHeader(h http.Header, config XPaddingConfig) {
 	if h == nil {
 		return
@@ -167,6 +178,23 @@ func ApplyXPaddingToHeader(h http.Header, config XPaddingConfig) {
 		}
 		u.RawQuery = p.Key + "=" + paddingValue
 		h.Set(p.Header, u.String())
+	}
+}
+
+// ApplyXPaddingToResponse mirrors ApplyXPaddingToRequest for the server
+// side. ApplyXPaddingToHeader alone cannot express cookie placement (there
+// is no equivalent of http.Request.AddCookie on a bare http.Header), so
+// x_padding_placement=cookie was previously silently dropped on responses
+// (matches Xray-core #5720 item 6).
+func ApplyXPaddingToResponse(writer http.ResponseWriter, config XPaddingConfig) {
+	placement := config.Placement.Placement
+	if placement == option.PlacementHeader || placement == option.PlacementQueryInHeader {
+		ApplyXPaddingToHeader(writer.Header(), config)
+		return
+	}
+	if placement == option.PlacementCookie {
+		paddingValue := GeneratePadding(config.Method, config.Length)
+		ApplyPaddingToResponseCookie(writer, config.Placement.Key, paddingValue)
 	}
 }
 
