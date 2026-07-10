@@ -424,17 +424,17 @@ func ExtractMetaFromRequest(options *option.V2RayXHTTPOptions, req *http.Request
 	seqPlacement := options.GetNormalizedSeqPlacement()
 	sessionKey := options.GetNormalizedSessionKey()
 	seqKey := options.GetNormalizedSeqKey()
-	if sessionPlacement == option.PlacementPath && seqPlacement == option.PlacementPath {
-		subpath := strings.Split(req.URL.Path[len(path):], "/")
-		if len(subpath) > 0 {
-			sessionId = subpath[0]
-		}
-		if len(subpath) > 1 {
-			seqStr = subpath[1]
-		}
-		return sessionId, seqStr
+	var subpath []string
+	pathPart := 0
+	if sessionPlacement == option.PlacementPath || seqPlacement == option.PlacementPath {
+		subpath = strings.Split(req.URL.Path[len(path):], "/")
 	}
 	switch sessionPlacement {
+	case option.PlacementPath:
+		if len(subpath) > pathPart {
+			sessionId = subpath[pathPart]
+			pathPart += 1
+		}
 	case option.PlacementQuery:
 		sessionId = req.URL.Query().Get(sessionKey)
 	case option.PlacementHeader:
@@ -445,6 +445,11 @@ func ExtractMetaFromRequest(options *option.V2RayXHTTPOptions, req *http.Request
 		}
 	}
 	switch seqPlacement {
+	case option.PlacementPath:
+		if len(subpath) > pathPart {
+			seqStr = subpath[pathPart]
+			pathPart += 1
+		}
 	case option.PlacementQuery:
 		seqStr = req.URL.Query().Get(seqKey)
 	case option.PlacementHeader:

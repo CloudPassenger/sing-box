@@ -6,10 +6,12 @@ import (
 	"io"
 	"net"
 	"net/url"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
 
+	Xbadoption "github.com/sagernet/sing-box/common/xray/json/badoption"
 	"github.com/sagernet/sing-box/option"
 )
 
@@ -29,6 +31,110 @@ func (f *fakePacketDialerClient) PostPacket(_ context.Context, _ string, _ strin
 	// call on the same buffer after handoff -- a pre-existing, unrelated
 	// hazard in the upload pipe plumbing that this test is not about.
 	return nil
+}
+
+type recordingDialerClient struct {
+	mu      sync.Mutex
+	lengths []int64
+}
+
+func (f *recordingDialerClient) IsClosed() bool { return false }
+
+func (f *recordingDialerClient) OpenStream(_ context.Context, _ string, _ string, _ io.Reader, _ bool) (io.ReadCloser, net.Addr, net.Addr, error) {
+	return io.NopCloser(bytes.NewReader(nil)), &net.TCPAddr{}, &net.TCPAddr{}, nil
+}
+
+func (f *recordingDialerClient) PostPacket(_ context.Context, _ string, _ string, _ string, body io.Reader, contentLength int64) error {
+	n, _ := io.Copy(io.Discard, body)
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.lengths = append(f.lengths, n)
+	_ = contentLength
+	return nil
+}
+
+func (f *recordingDialerClient) total() (sum int64, count int) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	for _, n := range f.lengths {
+		sum += n
+	}
+	return sum, len(f.lengths)
+}
+
+// TestPacketUpStrictChunking is a regression test for Xray-core #5720 item
+// 2: the upload pipe's WithSizeLimit is a soft cap (a single WriteMultiBuffer
+// call is let through uncapped when the pipe wasn't full yet), so
+// ReadMultiBuffer can hand back more bytes than sc_max_each_post_bytes
+// allows. Every individual PostPacket body must still be split down to at
+// most maxUploadSize bytes before being sent, or a server enforcing
+// scMaxEachPostBytes strictly (e.g. behind nginx's small header/body
+// buffers) would reject the oversized POST.
+func TestPacketUpStrictChunking(t *testing.T) {
+	const maxUploadSize = 64
+	const payloadSize = 500 // not a multiple of maxUploadSize on purpose
+
+	recorder := &recordingDialerClient{}
+	xmuxUp := &XmuxClient{}
+	xmuxUp.LeftRequests.Store(1 << 20)
+	getHTTPClient := func() (DialerClient, *XmuxClient) { return recorder, xmuxUp }
+
+	downClient := &fakePacketDialerClient{}
+	xmuxDown := &XmuxClient{}
+	xmuxDown.LeftRequests.Store(1 << 20)
+	getHTTPClient2 := func() (DialerClient, *XmuxClient) { return downClient, xmuxDown }
+
+	c := &Client{
+		options: &option.V2RayXHTTPOptions{
+			Mode: "packet-up",
+			V2RayXHTTPBaseOptions: option.V2RayXHTTPBaseOptions{
+				ScMaxEachPostBytes:   Xbadoption.Range{From: maxUploadSize, To: maxUploadSize},
+				ScMinPostsIntervalMs: Xbadoption.Range{From: 0, To: 1},
+			},
+		},
+		baseRequestURL:  url.URL{Scheme: "http", Host: "example.com", Path: "/"},
+		baseRequestURL2: url.URL{Scheme: "http", Host: "example.com", Path: "/"},
+		getHTTPClient:   getHTTPClient,
+		getHTTPClient2:  getHTTPClient2,
+	}
+
+	conn, err := c.DialContext(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	payload := bytes.Repeat([]byte{'a'}, payloadSize)
+	if _, err := conn.Write(payload); err != nil {
+		t.Fatal(err)
+	}
+
+	deadline := time.Now().Add(2 * time.Second)
+	var sum int64
+	var count int
+	for time.Now().Before(deadline) {
+		sum, count = recorder.total()
+		if sum >= payloadSize {
+			break
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+	if err := conn.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	if sum != payloadSize {
+		t.Fatalf("total bytes posted = %d, want %d", sum, payloadSize)
+	}
+	if count < payloadSize/maxUploadSize {
+		t.Fatalf("expected at least %d PostPacket calls, got %d", payloadSize/maxUploadSize, count)
+	}
+	recorder.mu.Lock()
+	for i, n := range recorder.lengths {
+		if n > maxUploadSize {
+			recorder.mu.Unlock()
+			t.Fatalf("PostPacket call %d carried %d bytes, want <= %d (sc_max_each_post_bytes)", i, n, maxUploadSize)
+		}
+	}
+	recorder.mu.Unlock()
 }
 
 // TestPacketUpRotationNeverTouchesOuterXmuxClient is a regression test for

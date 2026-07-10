@@ -31,11 +31,16 @@ func (w uploadWriter) Write(b []byte) (int, error) {
 
 	var writed int
 	for _, buff := range buffer.MultiBuffer {
+		// capture the length before handing ownership to WriteMultiBuffer:
+		// once the pipe accepts it, the reader side (buf.SplitSize/Advance)
+		// may concurrently mutate this same *Buffer, so reading buff.Len()
+		// afterwards is a data race.
+		n := int(buff.Len())
 		err := w.WriteMultiBuffer(buf.MultiBuffer{buff})
 		if err != nil {
 			return writed, err
 		}
-		writed += int(buff.Len())
+		writed += n
 	}
 	return writed, nil
 }
