@@ -1,6 +1,7 @@
 package option
 
 import (
+	"math/big"
 	"net/http"
 	"reflect"
 	"strings"
@@ -136,6 +137,7 @@ type V2RayXHTTPBaseOptions struct {
 	ScMinPostsIntervalMs Xbadoption.Range           `json:"sc_min_posts_interval_ms"`
 	ScMaxBufferedPosts   int64                      `json:"sc_max_buffered_posts,omitempty"`
 	ScStreamUpServerSecs Xbadoption.Range           `json:"sc_stream_up_server_secs"`
+	ServerMaxHeaderBytes int                        `json:"server_max_header_bytes,omitempty"`
 	TrustedXForwardedFor badoption.Listable[string] `json:"trusted_x_forwarded_for,omitempty"`
 	Xmux                 *V2RayXHTTPXmuxOptions     `json:"xmux"`
 	XPaddingObfsMode     bool                       `json:"x_padding_obfs_mode,omitempty"`
@@ -146,6 +148,8 @@ type V2RayXHTTPBaseOptions struct {
 	UplinkHTTPMethod     string                     `json:"uplink_http_method,omitempty"`
 	SessionPlacement     string                     `json:"session_placement,omitempty"`
 	SessionKey           string                     `json:"session_key,omitempty"`
+	SessionIDTable       string                     `json:"session_id_table,omitempty"`
+	SessionIDLength      Xbadoption.Range           `json:"session_id_length,omitempty"`
 	SeqPlacement         string                     `json:"seq_placement,omitempty"`
 	SeqKey               string                     `json:"seq_key,omitempty"`
 	UplinkDataPlacement  string                     `json:"uplink_data_placement,omitempty"`
@@ -306,6 +310,28 @@ func checkV2RayXHTTPBaseOptions(mode string, options *V2RayXHTTPBaseOptions) err
 	} else if options.UplinkChunkSize < 64 {
 		options.UplinkChunkSize = 64
 	}
+	if options.ServerMaxHeaderBytes < 0 {
+		return E.New("invalid negative value of server_max_header_bytes")
+	}
+	if options.SessionIDTable != "" {
+		table := options.SessionIDTable
+		if predefined, ok := PredefinedSessionIDTables[table]; ok {
+			table = predefined
+		}
+		for i := 0; i < len(table); i++ {
+			if table[i] >= 0x80 {
+				return E.New("session_id_table must contain only ASCII characters")
+			}
+		}
+		if options.SessionIDLength.From <= 0 {
+			return E.New("session_id_length.from must be greater than 0")
+		}
+		// 2.1B possibilities should be enough
+		if sessionIDRoomSize(len(table), options.SessionIDLength.From, options.SessionIDLength.To).Cmp(big.NewInt(2<<30)) < 0 {
+			return E.New("session_id_table or session_id_length is too small")
+		}
+		options.SessionIDTable = table
+	}
 	if options.Xmux == nil {
 		options.Xmux = &V2RayXHTTPXmuxOptions{}
 		options.Xmux.MaxConnections.From = 6
@@ -457,6 +483,40 @@ func (c *V2RayXHTTPBaseOptions) GetNormalizedSeqKey() string {
 	default:
 		return ""
 	}
+}
+
+func (c *V2RayXHTTPBaseOptions) GetNormalizedServerMaxHeaderBytes() int {
+	if c.ServerMaxHeaderBytes <= 0 {
+		return 8192
+	}
+	return c.ServerMaxHeaderBytes
+}
+
+// PredefinedSessionIDTables maps a session_id_table shorthand name to its
+// character set, matching Xray-core's splithttp.PredefinedTable.
+var PredefinedSessionIDTables = map[string]string{
+	"ALPHABET": "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+	"Alphabet": "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
+	"BASE36":   "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+	"Base62":   "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
+	"HEX":      "0123456789ABCDEF",
+	"alphabet": "abcdefghijklmnopqrstuvwxyz",
+	"base36":   "0123456789abcdefghijklmnopqrstuvwxyz",
+	"hex":      "0123456789abcdef",
+	"number":   "0123456789",
+}
+
+// sessionIDRoomSize sums tableSize^k for k in [min, max], the total number
+// of distinct session IDs producible, matching Xray-core's roomSize.
+func sessionIDRoomSize(tableSize int, min, max int32) *big.Int {
+	base := big.NewInt(int64(tableSize))
+	sum := new(big.Int)
+	term := new(big.Int)
+	for k := min; k <= max; k++ {
+		term.Exp(base, big.NewInt(int64(k)), nil)
+		sum.Add(sum, term)
+	}
+	return sum
 }
 
 type V2RayXHTTPXmuxOptions struct {

@@ -22,7 +22,6 @@ import (
 	"github.com/sagernet/sing-box/common/xray/net"
 	"github.com/sagernet/sing-box/common/xray/pipe"
 	"github.com/sagernet/sing-box/common/xray/signal/done"
-	"github.com/sagernet/sing-box/common/xray/uuid"
 	"github.com/sagernet/sing-box/log"
 	"github.com/sagernet/sing-box/option"
 	qtls "github.com/sagernet/sing-quic"
@@ -129,8 +128,7 @@ func (c *Client) DialContext(ctx context.Context) (net.Conn, error) {
 	mode := c.options.Mode
 	sessionId := ""
 	if c.options.Mode != "stream-one" {
-		sessionIdUuid := uuid.New()
-		sessionId = sessionIdUuid.String()
+		sessionId = GenerateSessionID(&c.options.V2RayXHTTPBaseOptions)
 	}
 	requestURL := c.baseRequestURL
 	requestURL2 := c.baseRequestURL2
