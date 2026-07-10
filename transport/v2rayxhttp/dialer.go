@@ -124,7 +124,11 @@ func (c *DefaultDialerClient) OpenStream(ctx context.Context, url string, sessio
 func (c *DefaultDialerClient) PostPacket(ctx context.Context, url string, sessionId string, seqStr string, body io.Reader, contentLength int64) error {
 	var encodedData string
 	dataPlacement := c.options.GetNormalizedUplinkDataPlacement()
-	if dataPlacement != option.PlacementBody {
+	// "auto" lets a single server inbound accept different clients placing
+	// their uplink data in different spots (header/cookie/body); from the
+	// client's own perspective it behaves exactly like PlacementBody, so
+	// only an explicit header/cookie override moves the payload off body.
+	if dataPlacement == option.PlacementHeader || dataPlacement == option.PlacementCookie {
 		data, err := io.ReadAll(body)
 		if err != nil {
 			return err
@@ -140,7 +144,7 @@ func (c *DefaultDialerClient) PostPacket(ctx context.Context, url string, sessio
 	}
 	req.ContentLength = contentLength
 	req.Header = c.options.GetRequestHeader()
-	if dataPlacement != option.PlacementBody {
+	if dataPlacement == option.PlacementHeader || dataPlacement == option.PlacementCookie {
 		key := c.options.UplinkDataKey
 		chunkSize := int(c.options.UplinkChunkSize)
 		switch dataPlacement {
@@ -151,9 +155,6 @@ func (c *DefaultDialerClient) PostPacket(ctx context.Context, url string, sessio
 				headerKey := fmt.Sprintf("%s-%d", key, i/chunkSize)
 				req.Header.Set(headerKey, chunk)
 			}
-
-			req.Header.Set(key+"-Length", fmt.Sprintf("%d", len(encodedData)))
-			req.Header.Set(key+"-Upstream", "1")
 		case option.PlacementCookie:
 			for i := 0; i < len(encodedData); i += chunkSize {
 				end := min(i+chunkSize, len(encodedData))
@@ -161,8 +162,6 @@ func (c *DefaultDialerClient) PostPacket(ctx context.Context, url string, sessio
 				cookieName := fmt.Sprintf("%s_%d", key, i/chunkSize)
 				req.AddCookie(&http.Cookie{Name: cookieName, Value: chunk})
 			}
-
-			req.AddCookie(&http.Cookie{Name: key + "_upstream", Value: "1"})
 		}
 	}
 	length := int(c.options.GetNormalizedXPaddingBytes().Rand())
