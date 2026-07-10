@@ -182,3 +182,49 @@ func TestXHTTPSessionIDTableValidation(t *testing.T) {
 		}
 	})
 }
+
+// TestXHTTPGetNormalizedUplinkChunkSize is a regression test: the default
+// chunk size for header/cookie uplink placement must be a randomized
+// range (matching Xray-core's anti-fingerprinting default), not one fixed
+// size, and a plain JSON number must still parse into a fixed range for
+// backward compatibility with existing "uplink_chunk_size": <n> configs.
+func TestXHTTPGetNormalizedUplinkChunkSize(t *testing.T) {
+	t.Run("cookie default is a range", func(t *testing.T) {
+		c := &V2RayXHTTPBaseOptions{UplinkDataPlacement: PlacementCookie}
+		got := c.GetNormalizedUplinkChunkSize()
+		if got.From != 2*1024 || got.To != 3*1024 {
+			t.Errorf("default cookie chunk size = %+v, want {2048 3072}", got)
+		}
+	})
+
+	t.Run("header default is a range", func(t *testing.T) {
+		c := &V2RayXHTTPBaseOptions{UplinkDataPlacement: PlacementHeader}
+		got := c.GetNormalizedUplinkChunkSize()
+		if got.From != 3000 || got.To != 4000 {
+			t.Errorf("default header chunk size = %+v, want {3000 4000}", got)
+		}
+	})
+
+	t.Run("explicit value below 64 is clamped", func(t *testing.T) {
+		c := &V2RayXHTTPBaseOptions{
+			UplinkDataPlacement: PlacementHeader,
+			UplinkChunkSize:     Xbadoption.Range{From: 10, To: 10},
+		}
+		got := c.GetNormalizedUplinkChunkSize()
+		if got.From != 64 || got.To != 64 {
+			t.Errorf("clamped chunk size = %+v, want {64 64}", got)
+		}
+	})
+
+	t.Run("plain JSON number parses as a fixed range", func(t *testing.T) {
+		var r Xbadoption.Range
+		if err := r.UnmarshalJSON([]byte("4096")); err != nil {
+			t.Fatal(err)
+		}
+		c := &V2RayXHTTPBaseOptions{UplinkDataPlacement: PlacementHeader, UplinkChunkSize: r}
+		got := c.GetNormalizedUplinkChunkSize()
+		if got.From != 4096 || got.To != 4096 {
+			t.Errorf("fixed chunk size = %+v, want {4096 4096}", got)
+		}
+	})
+}
