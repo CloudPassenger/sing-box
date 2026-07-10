@@ -111,31 +111,32 @@ type V2RayHTTPUpgradeOptions struct {
 }
 
 type V2RayXHTTPBaseOptions struct {
-	Host                 string                 `json:"host,omitempty"`
-	Path                 string                 `json:"path,omitempty"`
-	Headers              map[string]string      `json:"headers,omitempty"`
-	DomainStrategy       DomainStrategy         `json:"domain_strategy,omitempty"`
-	XPaddingBytes        Xbadoption.Range       `json:"x_padding_bytes"`
-	NoGRPCHeader         bool                   `json:"no_grpc_header,omitempty"`
-	NoSSEHeader          bool                   `json:"no_sse_header,omitempty"`
-	ScMaxEachPostBytes   Xbadoption.Range       `json:"sc_max_each_post_bytes"`
-	ScMinPostsIntervalMs Xbadoption.Range       `json:"sc_min_posts_interval_ms"`
-	ScMaxBufferedPosts   int64                  `json:"sc_max_buffered_posts,omitempty"`
-	ScStreamUpServerSecs Xbadoption.Range       `json:"sc_stream_up_server_secs"`
-	Xmux                 *V2RayXHTTPXmuxOptions `json:"xmux"`
-	XPaddingObfsMode     bool                   `json:"x_padding_obfs_mode,omitempty"`
-	XPaddingKey          string                 `json:"x_padding_key,omitempty"`
-	XPaddingHeader       string                 `json:"x_padding_header,omitempty"`
-	XPaddingPlacement    string                 `json:"x_padding_placement,omitempty"`
-	XPaddingMethod       string                 `json:"x_padding_method,omitempty"`
-	UplinkHTTPMethod     string                 `json:"uplink_http_method,omitempty"`
-	SessionPlacement     string                 `json:"session_placement,omitempty"`
-	SessionKey           string                 `json:"session_key,omitempty"`
-	SeqPlacement         string                 `json:"seq_placement,omitempty"`
-	SeqKey               string                 `json:"seq_key,omitempty"`
-	UplinkDataPlacement  string                 `json:"uplink_data_placement,omitempty"`
-	UplinkDataKey        string                 `json:"uplink_data_key,omitempty"`
-	UplinkChunkSize      uint32                 `json:"uplink_chunk_size,omitempty"`
+	Host                 string                     `json:"host,omitempty"`
+	Path                 string                     `json:"path,omitempty"`
+	Headers              map[string]string          `json:"headers,omitempty"`
+	DomainStrategy       DomainStrategy             `json:"domain_strategy,omitempty"`
+	XPaddingBytes        Xbadoption.Range           `json:"x_padding_bytes"`
+	NoGRPCHeader         bool                       `json:"no_grpc_header,omitempty"`
+	NoSSEHeader          bool                       `json:"no_sse_header,omitempty"`
+	ScMaxEachPostBytes   Xbadoption.Range           `json:"sc_max_each_post_bytes"`
+	ScMinPostsIntervalMs Xbadoption.Range           `json:"sc_min_posts_interval_ms"`
+	ScMaxBufferedPosts   int64                      `json:"sc_max_buffered_posts,omitempty"`
+	ScStreamUpServerSecs Xbadoption.Range           `json:"sc_stream_up_server_secs"`
+	TrustedXForwardedFor badoption.Listable[string] `json:"trusted_x_forwarded_for,omitempty"`
+	Xmux                 *V2RayXHTTPXmuxOptions     `json:"xmux"`
+	XPaddingObfsMode     bool                       `json:"x_padding_obfs_mode,omitempty"`
+	XPaddingKey          string                     `json:"x_padding_key,omitempty"`
+	XPaddingHeader       string                     `json:"x_padding_header,omitempty"`
+	XPaddingPlacement    string                     `json:"x_padding_placement,omitempty"`
+	XPaddingMethod       string                     `json:"x_padding_method,omitempty"`
+	UplinkHTTPMethod     string                     `json:"uplink_http_method,omitempty"`
+	SessionPlacement     string                     `json:"session_placement,omitempty"`
+	SessionKey           string                     `json:"session_key,omitempty"`
+	SeqPlacement         string                     `json:"seq_placement,omitempty"`
+	SeqKey               string                     `json:"seq_key,omitempty"`
+	UplinkDataPlacement  string                     `json:"uplink_data_placement,omitempty"`
+	UplinkDataKey        string                     `json:"uplink_data_key,omitempty"`
+	UplinkChunkSize      uint32                     `json:"uplink_chunk_size,omitempty"`
 }
 
 type _V2RayXHTTPOptions struct {
