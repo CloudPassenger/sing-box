@@ -90,3 +90,17 @@ func writeCORSResponseHeader(writer http.ResponseWriter, requestMethod string, r
 		}
 	}
 }
+
+// streamUpKeepaliveEnabled decides whether the stream-up response-body
+// keepalive goroutine may start. Referer carrying x_padding is the legacy
+// compat marker (the default, pre-obfs-mode client always placed padding
+// there). With XPaddingObfsMode, valid padding may be placed anywhere
+// (header/cookie/query) instead, so a request can pass padding validation
+// yet carry no Referer at all; treat that accepted obfs padding as an
+// equally valid compat marker (matches Xray-core #6343). Requests with
+// invalid/missing padding never reach here (rejected earlier), and
+// scStreamUpServerSecs<=0 disabling keepalive is handled by the caller.
+func streamUpKeepaliveEnabled(request *http.Request, obfsMode bool, obfsPaddingAccepted bool) bool {
+	hasLegacyRefererCompatMarker := request.Header.Get("Referer") != ""
+	return hasLegacyRefererCompatMarker || (obfsMode && obfsPaddingAccepted)
+}

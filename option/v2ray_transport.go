@@ -308,8 +308,8 @@ func checkV2RayXHTTPBaseOptions(mode string, options *V2RayXHTTPBaseOptions) err
 	}
 	if options.Xmux == nil {
 		options.Xmux = &V2RayXHTTPXmuxOptions{}
-		options.Xmux.MaxConcurrency.From = 1
-		options.Xmux.MaxConcurrency.To = 1
+		options.Xmux.MaxConnections.From = 6
+		options.Xmux.MaxConnections.To = 6
 		options.Xmux.HMaxRequestTimes.From = 600
 		options.Xmux.HMaxRequestTimes.To = 900
 		options.Xmux.HMaxReusableSecs.From = 1800
@@ -326,8 +326,11 @@ func (c *V2RayXHTTPBaseOptions) GetNormalizedPath() string {
 	if path == "" || path[0] != '/' {
 		path = "/" + path
 	}
-	if path[len(path)-1] != '/' {
-		path = path + "/"
+	if c.GetNormalizedSessionPlacement() == PlacementPath ||
+		c.GetNormalizedSeqPlacement() == PlacementPath {
+		if path[len(path)-1] != '/' {
+			path = path + "/"
+		}
 	}
 	return path
 }
