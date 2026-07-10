@@ -255,6 +255,8 @@ The server will write in response if not empty.
   "sc_min_posts_interval_ms": 30,
   "sc_max_buffered_posts": 30,
   "sc_stream_up_server_secs": "20-80",
+  "server_max_header_bytes": 8192,
+  "trusted_x_forwarded_for": [],
   "xmux": {},
   "x_padding_obfs_mode": false,
   "x_padding_key": "x_padding",
@@ -264,9 +266,11 @@ The server will write in response if not empty.
   "uplink_http_method": "POST",
   "session_placement": "path",
   "session_key": "",
+  "session_id_table": "",
+  "session_id_length": 0,
   "seq_placement": "path",
   "seq_key": "",
-  "uplink_data_placement": "body",
+  "uplink_data_placement": "auto",
   "uplink_data_key": "",
   "uplink_chunk_size": 0,
   "download": {}
@@ -304,7 +308,7 @@ The server validates it when set.
 
 Base request path.
 
-The normalized path always starts and ends with `/`. Query parameters can be appended directly in this field, for example `/xhttp/?ed=1`.
+The normalized path always starts with `/`. It also ends with `/` when `session_placement` or `seq_placement` is `path` (the default), since the slash separates this base path from the appended session/sequence segments; otherwise it is left unmodified. Query parameters can be appended directly in this field, for example `/xhttp/?ed=1`.
 
 #### headers
 
@@ -338,7 +342,7 @@ Maximum size of each upload request body.
 
 Defaults to `1000000`.
 
-It must be greater than `8192`.
+It must be greater than `0`. Uploads are split into chunks of at most this size before being sent.
 
 #### sc_min_posts_interval_ms
 
@@ -358,18 +362,32 @@ Padding flush interval used by the server in `stream-up` mode when it keeps the 
 
 Defaults to `20-80`.
 
+#### server_max_header_bytes
+
+Maximum size of the server's HTTP request header.
+
+Defaults to `8192`.
+
+#### trusted_x_forwarded_for
+
+List of header names trusted as proof that `X-Forwarded-For` was set by your own reverse proxy (e.g. nginx), not forged by the client.
+
+If empty, an incoming `X-Forwarded-For` is never trusted; the real socket address is used, and a warning is logged.
+
+If set, an incoming `X-Forwarded-For` is only trusted when the request also carries at least one of the listed headers; otherwise it is treated as a potential spoofing attempt and an error is logged.
+
 #### xmux
 
 Optional XHTTP connection reuse settings.
 
-If omitted, sing-box enables a conservative default xmux profile.
+If omitted, sing-box defaults to `max_connections: 6` (several distinct connections rather than one long-lived reused connection, which is a stronger signature for DPI/censorship heuristics that specifically target XHTTP).
 
 Structure:
 
 ```json
 {
-  "max_concurrency": 1,
-  "max_connections": 0,
+  "max_concurrency": 0,
+  "max_connections": 6,
   "c_max_reuse_times": 0,
   "h_max_request_times": "600-900",
   "h_max_reusable_secs": "1800-3000",
@@ -448,6 +466,20 @@ Field name used when `session_placement` is not `path`.
 
 Defaults to `x_session` for `cookie` and `query`, and `X-Session` for `header`.
 
+#### session_id_table
+
+Character set used to generate the session identifier, instead of a random UUID.
+
+A name from a predefined shorthand set (`ALPHABET`, `Alphabet`, `BASE36`, `Base62`, `HEX`, `alphabet`, `base36`, `hex`, `number`) expands to the corresponding character set; any other non-empty value is used verbatim as the character set and must contain only ASCII characters.
+
+If empty, the session identifier is a random UUID.
+
+#### session_id_length
+
+Length range of the generated session identifier when `session_id_table` is set.
+
+The combination of `session_id_table` and `session_id_length` must offer at least 2^31 distinct identifiers, and `session_id_length.from` must be greater than `0`.
+
 #### seq_placement
 
 Where to place the upload sequence value.
@@ -461,8 +493,6 @@ Available values:
 
 Defaults to `path`.
 
-When `session_placement` is `path`, `seq_placement` must also be `path`.
-
 #### seq_key
 
 Field name used when `seq_placement` is not `path`.
@@ -475,13 +505,14 @@ Where packet upload payload is stored.
 
 Available values:
 
+* `auto`
 * `body`
 * `cookie`
 * `header`
 
-Defaults to `body`.
+Defaults to `auto`.
 
-`cookie` and `header` are only accepted in `packet-up` mode.
+`auto` accepts payload arriving in any of header, cookie, and body simultaneously (concatenated in that order), so a single inbound can serve clients that place uplink data differently. `cookie` and `header` are only accepted in `packet-up` mode.
 
 #### uplink_data_key
 
