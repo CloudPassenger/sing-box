@@ -1,11 +1,14 @@
 package xhttp
 
 import (
+	"math/rand/v2"
 	"net/http"
 	"strings"
 
 	"github.com/sagernet/sing-box/common/xray/net"
 	"github.com/sagernet/sing-box/common/xray/signal/done"
+	"github.com/sagernet/sing-box/common/xray/uuid"
+	"github.com/sagernet/sing-box/option"
 )
 
 type httpSession struct {
@@ -15,6 +18,28 @@ type httpSession struct {
 	// after the client connects, this becomes "done" and the session lives as
 	// long as the GET request.
 	isFullyConnected *done.Instance
+}
+
+// GenerateSessionID produces a session identifier using the configured
+// character table and length range when set, or a random UUID otherwise.
+// A custom table/length lets a client avoid the UUID's fixed "-"-separated
+// shape, which some CDNs/WAFs specifically pattern-match on and block
+// (matches Xray-core #6258).
+func GenerateSessionID(options *option.V2RayXHTTPBaseOptions) string {
+	length := options.SessionIDLength.Rand()
+	table := options.SessionIDTable
+	if predefined, ok := option.PredefinedSessionIDTables[table]; ok {
+		table = predefined
+	}
+	if table != "" && length > 0 {
+		id := make([]byte, length)
+		for i := range id {
+			id[i] = table[rand.N(len(table))]
+		}
+		return string(id)
+	}
+	sessionIdUUID := uuid.New()
+	return sessionIdUUID.String()
 }
 
 func parseXForwardedFor(header http.Header) []net.Address {
