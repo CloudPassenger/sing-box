@@ -522,11 +522,11 @@ Defaults to `x_data` for `cookie` and `X-Data` for `header`.
 
 #### uplink_chunk_size
 
-Chunk size used when payload is split into headers or cookies.
+Chunk size range used when payload is split into headers or cookies. A random size within the range is drawn per chunk.
 
-Defaults to `3072` for `cookie` and `4096` for `header`.
+Defaults to `2048-3072` for `cookie` and `3000-4000` for `header`.
 
-Values below `64` are normalized to `64`.
+A `from` value below `64` is normalized to `64`.
 
 #### download
 

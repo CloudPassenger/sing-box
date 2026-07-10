@@ -154,7 +154,7 @@ type V2RayXHTTPBaseOptions struct {
 	SeqKey               string                     `json:"seq_key,omitempty"`
 	UplinkDataPlacement  string                     `json:"uplink_data_placement,omitempty"`
 	UplinkDataKey        string                     `json:"uplink_data_key,omitempty"`
-	UplinkChunkSize      uint32                     `json:"uplink_chunk_size,omitempty"`
+	UplinkChunkSize      Xbadoption.Range           `json:"uplink_chunk_size,omitempty"`
 }
 
 type _V2RayXHTTPOptions struct {
@@ -300,16 +300,6 @@ func checkV2RayXHTTPBaseOptions(mode string, options *V2RayXHTTPBaseOptions) err
 			options.UplinkDataKey = "X-Data"
 		}
 	}
-	if options.UplinkChunkSize == 0 {
-		switch options.UplinkDataPlacement {
-		case "cookie":
-			options.UplinkChunkSize = 3 * 1024 // 3KB
-		case "header":
-			options.UplinkChunkSize = 4 * 1024 // 4KB
-		}
-	} else if options.UplinkChunkSize < 64 {
-		options.UplinkChunkSize = 64
-	}
 	if options.ServerMaxHeaderBytes < 0 {
 		return E.New("invalid negative value of server_max_header_bytes")
 	}
@@ -406,6 +396,27 @@ func (c *V2RayXHTTPBaseOptions) GetNormalizedScMaxEachPostBytes() Xbadoption.Ran
 		}
 	}
 	return c.ScMaxEachPostBytes
+}
+
+// GetNormalizedUplinkChunkSize returns the chunk size range used when
+// splitting uplink payload across headers or cookies. Defaulting to a
+// range (rather than one fixed size) matches Xray-core: randomizing the
+// chunk boundary on every request makes the traffic harder to fingerprint
+// than a constant chunk size would be.
+func (c *V2RayXHTTPBaseOptions) GetNormalizedUplinkChunkSize() Xbadoption.Range {
+	if c.UplinkChunkSize.To == 0 {
+		switch c.UplinkDataPlacement {
+		case PlacementCookie:
+			return Xbadoption.Range{From: 2 * 1024, To: 3 * 1024} // 2 KiB - 3 KiB
+		case PlacementHeader:
+			return Xbadoption.Range{From: 3 * 1000, To: 4 * 1000} // 3 KB - 4 KB
+		default:
+			return c.GetNormalizedScMaxEachPostBytes()
+		}
+	} else if c.UplinkChunkSize.From < 64 {
+		return Xbadoption.Range{From: 64, To: max(64, c.UplinkChunkSize.To)}
+	}
+	return c.UplinkChunkSize
 }
 
 func (c *V2RayXHTTPBaseOptions) GetNormalizedScMinPostsIntervalMs() Xbadoption.Range {

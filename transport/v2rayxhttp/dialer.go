@@ -148,20 +148,21 @@ func (c *DefaultDialerClient) PostPacket(ctx context.Context, url string, sessio
 	req.Header = c.options.GetRequestHeader()
 	if dataPlacement == option.PlacementHeader || dataPlacement == option.PlacementCookie {
 		key := c.options.UplinkDataKey
-		chunkSize := int(c.options.UplinkChunkSize)
 		switch dataPlacement {
 		case option.PlacementHeader:
-			for i := 0; i < len(encodedData); i += chunkSize {
-				end := min(i+chunkSize, len(encodedData))
-				chunk := encodedData[i:end]
-				headerKey := fmt.Sprintf("%s-%d", key, i/chunkSize)
+			for i := 0; len(encodedData) > 0; i++ {
+				chunkSize := min(int(c.options.GetNormalizedUplinkChunkSize().Rand()), len(encodedData))
+				chunk := encodedData[:chunkSize]
+				encodedData = encodedData[chunkSize:]
+				headerKey := fmt.Sprintf("%s-%d", key, i)
 				req.Header.Set(headerKey, chunk)
 			}
 		case option.PlacementCookie:
-			for i := 0; i < len(encodedData); i += chunkSize {
-				end := min(i+chunkSize, len(encodedData))
-				chunk := encodedData[i:end]
-				cookieName := fmt.Sprintf("%s_%d", key, i/chunkSize)
+			for i := 0; len(encodedData) > 0; i++ {
+				chunkSize := min(int(c.options.GetNormalizedUplinkChunkSize().Rand()), len(encodedData))
+				chunk := encodedData[:chunkSize]
+				encodedData = encodedData[chunkSize:]
+				cookieName := fmt.Sprintf("%s_%d", key, i)
 				req.AddCookie(&http.Cookie{Name: cookieName, Value: chunk})
 			}
 		}
