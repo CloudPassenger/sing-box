@@ -128,7 +128,13 @@ func (s *Server) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 		writer.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	forwardedAddrs := parseXForwardedFor(request.Header)
+	forwardedAddrs, xffWarn, xffForged := trustedForwardedAddrs(request.Header, s.options.TrustedXForwardedFor)
+	switch {
+	case xffWarn:
+		s.logger.WarnContext(request.Context(), `received "X-Forwarded-For" from `, request.RemoteAddr, ` but "trusted_x_forwarded_for" is not configured; ignoring it and using the real remote address`)
+	case xffForged:
+		s.logger.ErrorContext(request.Context(), `ignored potentially forged "X-Forwarded-For" from `, request.RemoteAddr, `: `, request.Header.Get("X-Forwarded-For"))
+	}
 	var remoteAddr net.Addr
 	var err error
 	remoteAddr, err = net.ResolveTCPAddr("tcp", request.RemoteAddr)
