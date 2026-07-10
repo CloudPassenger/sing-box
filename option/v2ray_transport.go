@@ -160,6 +160,7 @@ const (
 	PlacementQuery         = "query"
 	PlacementPath          = "path"
 	PlacementBody          = "body"
+	PlacementAuto          = "auto"
 )
 
 func (c V2RayXHTTPOptions) MarshalJSON() ([]byte, error) {
@@ -226,9 +227,9 @@ func checkV2RayXHTTPBaseOptions(mode string, options *V2RayXHTTPBaseOptions) err
 	}
 	switch options.UplinkDataPlacement {
 	case "":
-		options.UplinkDataPlacement = "body"
-	case "body":
-	case "cookie", "header":
+		options.UplinkDataPlacement = PlacementAuto
+	case PlacementAuto, PlacementBody:
+	case PlacementCookie, PlacementHeader:
 		if mode != "packet-up" {
 			return E.New("uplink_data_placement can be " + options.UplinkDataPlacement + " only in packet-up mode")
 		}
@@ -272,11 +273,11 @@ func checkV2RayXHTTPBaseOptions(mode string, options *V2RayXHTTPBaseOptions) err
 			options.SeqKey = "X-Seq"
 		}
 	}
-	if options.UplinkDataPlacement != "body" && options.UplinkDataKey == "" {
+	if options.UplinkDataPlacement != PlacementBody && options.UplinkDataKey == "" {
 		switch options.UplinkDataPlacement {
-		case "cookie":
+		case PlacementCookie:
 			options.UplinkDataKey = "x_data"
-		case "header":
+		case PlacementAuto, PlacementHeader:
 			options.UplinkDataKey = "X-Data"
 		}
 	}
@@ -407,7 +408,7 @@ func (c *V2RayXHTTPBaseOptions) GetNormalizedSeqPlacement() string {
 
 func (c *V2RayXHTTPBaseOptions) GetNormalizedUplinkDataPlacement() string {
 	if c.UplinkDataPlacement == "" {
-		return PlacementBody
+		return PlacementAuto
 	}
 	return c.UplinkDataPlacement
 }
