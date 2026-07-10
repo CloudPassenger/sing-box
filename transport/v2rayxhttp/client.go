@@ -362,7 +362,19 @@ func createHTTPClient(dest M.Socksaddr, dialer N.Dialer, options *option.V2RayXH
 				if dErr != nil {
 					return nil, dErr
 				}
-				return qtls.DialEarly(ctx, bufio.NewUnbindPacketConn(udpConn), udpConn.RemoteAddr(), tlsConfig, cfg)
+				conn, dErr := qtls.DialEarly(ctx, bufio.NewUnbindPacketConn(udpConn), udpConn.RemoteAddr(), tlsConfig, cfg)
+				if dErr != nil {
+					udpConn.Close()
+					return nil, dErr
+				}
+				// http3.Transport's QUIC connection lifecycle is decoupled
+				// from the underlying UDP socket: closing/evicting the H3
+				// XmuxClient does not close udpConn on its own, leaking a
+				// UDP socket per connection over the process lifetime.
+				// Close it once the QUIC connection itself closes (matches
+				// Xray-core #6332).
+				context.AfterFunc(conn.Context(), func() { udpConn.Close() })
+				return conn, nil
 			},
 		}
 	case "2":
