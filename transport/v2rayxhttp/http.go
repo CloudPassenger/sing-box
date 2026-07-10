@@ -60,3 +60,33 @@ func isValidHTTPHost(request string, config string) bool {
 	}
 	return r == c
 }
+
+// writeCORSResponseHeader sets CORS headers for the browser dialer.
+// Access-Control-Allow-Origin echoes the request's Origin (rather than a
+// blanket "*") whenever session/seq/padding/uplink data can be placed in
+// cookies, since a wildcard origin is invalid together with credentialed
+// (cookie-carrying) requests. For OPTIONS preflight, it reflects the
+// requested method/headers instead of a blanket "*", which some browsers
+// reject for credentialed requests (matches Xray-core #5720).
+func writeCORSResponseHeader(writer http.ResponseWriter, requestMethod string, requestHeader http.Header, usesCookies bool) {
+	if origin := requestHeader.Get("Origin"); origin == "" {
+		writer.Header().Set("Access-Control-Allow-Origin", "*")
+	} else {
+		writer.Header().Set("Access-Control-Allow-Origin", origin)
+	}
+	if usesCookies {
+		writer.Header().Set("Access-Control-Allow-Credentials", "true")
+	}
+	if requestMethod == http.MethodOptions {
+		if requestedMethod := requestHeader.Get("Access-Control-Request-Method"); requestedMethod != "" {
+			writer.Header().Set("Access-Control-Allow-Methods", requestedMethod)
+		} else {
+			writer.Header().Set("Access-Control-Allow-Methods", "*")
+		}
+		if requestedHeaders := requestHeader.Get("Access-Control-Request-Headers"); requestedHeaders != "" {
+			writer.Header().Set("Access-Control-Allow-Headers", requestedHeaders)
+		} else {
+			writer.Header().Set("Access-Control-Allow-Headers", "*")
+		}
+	}
+}
