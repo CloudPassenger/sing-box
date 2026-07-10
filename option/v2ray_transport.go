@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"strings"
 
-	Xbuf "github.com/sagernet/sing-box/common/xray/buf"
 	Xbadoption "github.com/sagernet/sing-box/common/xray/json/badoption"
 	"github.com/sagernet/sing-box/common/xray/utils"
 	C "github.com/sagernet/sing-box/constant"
@@ -202,8 +201,8 @@ func checkV2RayXHTTPBaseOptions(mode string, options *V2RayXHTTPBaseOptions) err
 	if options.XPaddingBytes.From <= 0 || options.XPaddingBytes.To <= 0 {
 		return E.New("x_padding_bytes cannot be disabled")
 	}
-	if options.GetNormalizedScMaxEachPostBytes().From <= Xbuf.Size {
-		return E.New("sc_max_each_post_bytes must be greater than ", Xbuf.Size)
+	if mode != "stream-one" && mode != "stream-up" && options.GetNormalizedScMaxEachPostBytes().From <= 0 {
+		return E.New("`sc_max_each_post_bytes` should be bigger than 0")
 	}
 	if options.XPaddingKey == "" {
 		options.XPaddingKey = "x_padding"
@@ -253,11 +252,7 @@ func checkV2RayXHTTPBaseOptions(mode string, options *V2RayXHTTPBaseOptions) err
 	switch options.SeqPlacement {
 	case "":
 		options.SeqPlacement = "path"
-	case "path":
-	case "cookie", "header", "query":
-		if options.SessionPlacement == "path" {
-			return E.New("seq_placement must be path when session_placement is path")
-		}
+	case "path", "cookie", "header", "query":
 	default:
 		return E.New("unsupported seq placement: " + options.SeqPlacement)
 	}

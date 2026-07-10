@@ -191,15 +191,15 @@ func (c *Client) DialContext(ctx context.Context) (net.Conn, error) {
 	}
 	scMaxEachPostBytes := options.GetNormalizedScMaxEachPostBytes()
 	scMinPostsIntervalMs := options.GetNormalizedScMinPostsIntervalMs()
-	if scMaxEachPostBytes.From <= buf.Size {
-		panic("`scMaxEachPostBytes` should be bigger than " + strconv.Itoa(buf.Size))
+	if scMaxEachPostBytes.From <= 0 {
+		panic("`scMaxEachPostBytes` should be bigger than 0")
 	}
 	maxUploadSize := scMaxEachPostBytes.Rand()
 	// WithSizeLimit(0) will still allow single bytes to pass, and a lot of
 	// code relies on this behavior. Subtract 1 so that together with
 	// uploadWriter wrapper, exact size limits can be enforced
 	// uploadPipeReader, uploadPipeWriter := pipe.New(pipe.WithSizeLimit(maxUploadSize - 1))
-	uploadPipeReader, uploadPipeWriter := pipe.New(pipe.WithSizeLimit(maxUploadSize - buf.Size))
+	uploadPipeReader, uploadPipeWriter := pipe.New(pipe.WithSizeLimit(max(0, maxUploadSize-buf.Size)))
 	conn.writer = uploadWriter{
 		uploadPipeWriter,
 		maxUploadSize,
@@ -216,48 +216,62 @@ func (c *Client) DialContext(ctx context.Context) (net.Conn, error) {
 		dynamicHTTPClient := httpClient
 		dynamicXmuxClient := xmuxClient
 		for {
-			wroteRequest := done.New()
-			ctx := httptrace.WithClientTrace(ctx, &httptrace.ClientTrace{
-				WroteRequest: func(httptrace.WroteRequestInfo) {
-					wroteRequest.Close()
-				},
-			})
-			// this intentionally makes a shallow-copy of the struct so we
-			// can reassign Path (potentially concurrently)
-			url := requestURL
-			seqStr := strconv.FormatInt(seq, 10)
-			seq += 1
-			if scMinPostsIntervalMs.From > 0 {
-				time.Sleep(time.Duration(scMinPostsIntervalMs.Rand())*time.Millisecond - time.Since(lastWrite))
-			}
 			// by offloading the uploads into a buffered pipe, multiple conn.Write
 			// calls get automatically batched together into larger POST requests.
 			// without batching, bandwidth is extremely limited.
-			chunk, err := uploadPipeReader.ReadMultiBuffer()
+			remainder, err := uploadPipeReader.ReadMultiBuffer()
 			if err != nil {
 				break
 			}
-			lastWrite = time.Now()
-			if dynamicXmuxClient != nil && (dynamicXmuxClient.LeftRequests.Add(-1) <= 0 ||
-				(dynamicXmuxClient.UnreusableAt != time.Time{} && lastWrite.After(dynamicXmuxClient.UnreusableAt))) {
-				dynamicHTTPClient, dynamicXmuxClient = c.getHTTPClient()
-			}
-			go func(hClient DialerClient) {
-				err := hClient.PostPacket(
-					ctx,
-					url.String(),
-					sessionId,
-					seqStr,
-					&buf.MultiBufferContainer{MultiBuffer: chunk},
-					int64(chunk.Len()),
-				)
-				wroteRequest.Close()
-				if err != nil {
-					uploadPipeReader.Interrupt()
+			// WithSizeLimit(0) still lets a single WriteMultiBuffer call
+			// through uncapped when the pipe wasn't full yet, so the
+			// accumulated remainder read back here can exceed
+			// maxUploadSize. Split it into maxUploadSize-sized chunks so
+			// every POST body actually honors sc_max_each_post_bytes.
+			doSplit := atomic.Bool{}
+			for doSplit.Store(true); doSplit.Load(); {
+				var chunk buf.MultiBuffer
+				remainder, chunk = buf.SplitSize(remainder, maxUploadSize)
+				if chunk.IsEmpty() {
+					break
 				}
-			}(dynamicHTTPClient)
-			if _, ok := dynamicHTTPClient.(*DefaultDialerClient); ok {
-				<-wroteRequest.Wait()
+				wroteRequest := done.New()
+				ctx := httptrace.WithClientTrace(ctx, &httptrace.ClientTrace{
+					WroteRequest: func(httptrace.WroteRequestInfo) {
+						wroteRequest.Close()
+					},
+				})
+				// this intentionally makes a shallow-copy of the struct so we
+				// can reassign Path (potentially concurrently)
+				url := requestURL
+				seqStr := strconv.FormatInt(seq, 10)
+				seq += 1
+				if scMinPostsIntervalMs.From > 0 {
+					time.Sleep(time.Duration(scMinPostsIntervalMs.Rand())*time.Millisecond - time.Since(lastWrite))
+				}
+				lastWrite = time.Now()
+				if dynamicXmuxClient != nil && (dynamicXmuxClient.LeftRequests.Add(-1) <= 0 ||
+					(dynamicXmuxClient.UnreusableAt != time.Time{} && lastWrite.After(dynamicXmuxClient.UnreusableAt))) {
+					dynamicHTTPClient, dynamicXmuxClient = c.getHTTPClient()
+				}
+				go func(hClient DialerClient, chunk buf.MultiBuffer) {
+					err := hClient.PostPacket(
+						ctx,
+						url.String(),
+						sessionId,
+						seqStr,
+						&buf.MultiBufferContainer{MultiBuffer: chunk},
+						int64(chunk.Len()),
+					)
+					wroteRequest.Close()
+					if err != nil {
+						uploadPipeReader.Interrupt()
+						doSplit.Store(false)
+					}
+				}(dynamicHTTPClient, chunk)
+				if _, ok := dynamicHTTPClient.(*DefaultDialerClient); ok {
+					<-wroteRequest.Wait()
+				}
 			}
 		}
 	}()
