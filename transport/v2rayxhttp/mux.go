@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/rand"
 	"errors"
-	"io"
 	"math"
 	"math/big"
 	"sync"
@@ -12,6 +11,7 @@ import (
 	"time"
 
 	"github.com/sagernet/sing-box/option"
+	"github.com/sagernet/sing/common"
 )
 
 type XmuxConn interface {
@@ -20,10 +20,30 @@ type XmuxConn interface {
 
 type XmuxClient struct {
 	XmuxConn     XmuxConn
-	OpenUsage    atomic.Int32
+	Running      atomic.Int32
 	leftUsage    int32
 	LeftRequests atomic.Int32
 	UnreusableAt time.Time
+	NotUsed      atomic.Bool
+}
+
+func (c *XmuxClient) AddRunning() {
+	c.Running.Add(1)
+}
+
+func (c *XmuxClient) DoneRunning() {
+	c.Running.Add(-1)
+	c.maybeClose()
+}
+
+// maybeClose closes the underlying XmuxConn once it has been evicted from
+// the pool (NotUsed) and has no running requests left. This avoids cutting
+// off streams that are still active when the client is merely rotated out
+// of future selection.
+func (c *XmuxClient) maybeClose() {
+	if c.NotUsed.Load() && c.Running.Load() <= 0 {
+		common.Close(c.XmuxConn)
+	}
 }
 
 type XmuxManager struct {
@@ -73,9 +93,11 @@ func (m *XmuxManager) GetXmuxClient(ctx context.Context) *XmuxClient {
 			xmuxClient.leftUsage == 0 ||
 			xmuxClient.LeftRequests.Load() <= 0 ||
 			(xmuxClient.UnreusableAt != time.Time{} && time.Now().After(xmuxClient.UnreusableAt)) {
-			if closer, ok := xmuxClient.XmuxConn.(io.Closer); ok {
-				_ = closer.Close()
-			}
+			// evict from the pool, but defer actually closing the
+			// underlying connection until every request still running on
+			// it (AddRunning/DoneRunning) has finished.
+			xmuxClient.NotUsed.Store(true)
+			xmuxClient.maybeClose()
 			m.xmuxClients = append(m.xmuxClients[:i], m.xmuxClients[i+1:]...)
 		} else {
 			i++
@@ -90,7 +112,7 @@ func (m *XmuxManager) GetXmuxClient(ctx context.Context) *XmuxClient {
 	xmuxClients := make([]*XmuxClient, 0)
 	if m.concurrency > 0 {
 		for _, xmuxClient := range m.xmuxClients {
-			if xmuxClient.OpenUsage.Load() < m.concurrency {
+			if xmuxClient.Running.Load() < m.concurrency {
 				xmuxClients = append(xmuxClients, xmuxClient)
 			}
 		}
@@ -108,15 +130,16 @@ func (m *XmuxManager) GetXmuxClient(ctx context.Context) *XmuxClient {
 	return xmuxClient
 }
 
+// Close force-closes every managed connection immediately. This is only
+// called when the whole transport (outbound) is being torn down, so unlike
+// eviction in GetXmuxClient, it does not wait for in-flight requests.
 func (m *XmuxManager) Close() error {
 	m.mtx.Lock()
 	defer m.mtx.Unlock()
 	var errs []error
 	for _, xmuxClient := range m.xmuxClients {
-		if closer, ok := xmuxClient.XmuxConn.(io.Closer); ok {
-			if err := closer.Close(); err != nil {
-				errs = append(errs, err)
-			}
+		if err := common.Close(xmuxClient.XmuxConn); err != nil {
+			errs = append(errs, err)
 		}
 	}
 	m.xmuxClients = nil

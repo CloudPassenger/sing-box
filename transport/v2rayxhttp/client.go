@@ -47,18 +47,6 @@ type Client struct {
 	secondaryXmux   *XmuxManager
 }
 
-func retainXmuxClient(xmuxClient *XmuxClient) {
-	if xmuxClient != nil {
-		xmuxClient.OpenUsage.Add(1)
-	}
-}
-
-func releaseXmuxClient(xmuxClient *XmuxClient) {
-	if xmuxClient != nil {
-		xmuxClient.OpenUsage.Add(-1)
-	}
-}
-
 func NewClient(ctx context.Context, dialer N.Dialer, serverAddr M.Socksaddr, options option.V2RayXHTTPOptions, tlsConfig tls.Config) (adapter.V2RayClientTransport, error) {
 	logger := resolveLogger(ctx)
 	if options.Mode == "" {
@@ -148,9 +136,11 @@ func (c *Client) DialContext(ctx context.Context) (net.Conn, error) {
 	requestURL2 := c.baseRequestURL2
 	httpClient, xmuxClient := c.getHTTPClient()
 	httpClient2, xmuxClient2 := c.getHTTPClient2()
-	retainXmuxClient(xmuxClient)
-	if xmuxClient2 != xmuxClient {
-		retainXmuxClient(xmuxClient2)
+	if xmuxClient != nil {
+		xmuxClient.AddRunning()
+	}
+	if xmuxClient2 != nil && xmuxClient2 != xmuxClient {
+		xmuxClient2.AddRunning()
 	}
 	var closed atomic.Int32
 	reader, writer := io.Pipe()
@@ -160,9 +150,11 @@ func (c *Client) DialContext(ctx context.Context) (net.Conn, error) {
 			if closed.Add(1) > 1 {
 				return
 			}
-			releaseXmuxClient(xmuxClient)
-			if xmuxClient2 != xmuxClient {
-				releaseXmuxClient(xmuxClient2)
+			if xmuxClient != nil {
+				xmuxClient.DoneRunning()
+			}
+			if xmuxClient2 != nil && xmuxClient2 != xmuxClient {
+				xmuxClient2.DoneRunning()
 			}
 		},
 	}
@@ -214,6 +206,14 @@ func (c *Client) DialContext(ctx context.Context) (net.Conn, error) {
 	go func() {
 		var seq int64
 		var lastWrite time.Time
+		// dynamicHTTPClient/dynamicXmuxClient are local to this goroutine.
+		// They must never alias the outer httpClient/xmuxClient variables:
+		// onClose() reads those to release the running-count taken at Dial
+		// time, and reassigning the outer variables here would race with
+		// that read and misattribute the release to whichever client this
+		// loop most recently rotated to (Xray-core #6140).
+		dynamicHTTPClient := httpClient
+		dynamicXmuxClient := xmuxClient
 		for {
 			wroteRequest := done.New()
 			ctx := httptrace.WithClientTrace(ctx, &httptrace.ClientTrace{
@@ -237,14 +237,12 @@ func (c *Client) DialContext(ctx context.Context) (net.Conn, error) {
 				break
 			}
 			lastWrite = time.Now()
-			if xmuxClient != nil && (xmuxClient.LeftRequests.Add(-1) <= 0 ||
-				(xmuxClient.UnreusableAt != time.Time{} && lastWrite.After(xmuxClient.UnreusableAt))) {
-				releaseXmuxClient(xmuxClient)
-				httpClient, xmuxClient = c.getHTTPClient()
-				retainXmuxClient(xmuxClient)
+			if dynamicXmuxClient != nil && (dynamicXmuxClient.LeftRequests.Add(-1) <= 0 ||
+				(dynamicXmuxClient.UnreusableAt != time.Time{} && lastWrite.After(dynamicXmuxClient.UnreusableAt))) {
+				dynamicHTTPClient, dynamicXmuxClient = c.getHTTPClient()
 			}
-			go func() {
-				err := httpClient.PostPacket(
+			go func(hClient DialerClient) {
+				err := hClient.PostPacket(
 					ctx,
 					url.String(),
 					sessionId,
@@ -256,8 +254,8 @@ func (c *Client) DialContext(ctx context.Context) (net.Conn, error) {
 				if err != nil {
 					uploadPipeReader.Interrupt()
 				}
-			}()
-			if _, ok := httpClient.(*DefaultDialerClient); ok {
+			}(dynamicHTTPClient)
+			if _, ok := dynamicHTTPClient.(*DefaultDialerClient); ok {
 				<-wroteRequest.Wait()
 			}
 		}
