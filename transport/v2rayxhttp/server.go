@@ -205,8 +205,7 @@ func (s *Server) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 				writer.Header().Set("Cache-Control", "no-store")
 				writer.WriteHeader(http.StatusOK)
 				scStreamUpServerSecs := s.options.GetNormalizedScStreamUpServerSecs()
-				referrer := request.Header.Get("Referer")
-				if referrer != "" && scStreamUpServerSecs.To > 0 {
+				if streamUpKeepaliveEnabled(request, s.options.XPaddingObfsMode, paddingValue != "") && scStreamUpServerSecs.To > 0 {
 					go func() {
 						for {
 							_, err := httpSC.Write(bytes.Repeat([]byte{'X'}, int(s.options.GetNormalizedXPaddingBytes().Rand())))
