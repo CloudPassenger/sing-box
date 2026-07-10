@@ -66,7 +66,7 @@ func NewServer(ctx context.Context, logger logger.ContextLogger, options option.
 		server.httpServer = &http.Server{
 			Handler:           server,
 			ReadHeaderTimeout: time.Second * 4,
-			MaxHeaderBytes:    8192,
+			MaxHeaderBytes:    options.GetNormalizedServerMaxHeaderBytes(),
 			Protocols:         protocols,
 			BaseContext: func(net.Listener) context.Context {
 				return ctx
