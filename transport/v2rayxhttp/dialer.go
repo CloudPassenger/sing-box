@@ -106,12 +106,14 @@ func (c *DefaultDialerClient) OpenStream(ctx context.Context, url string, sessio
 				c.closed = true
 			}
 			gotConn.Close()
+			common.Close(body)
 			wrc.Close()
 			return
 		}
 		if resp.StatusCode != 200 || uploadOnly { // stream-up
 			io.Copy(io.Discard, resp.Body)
 			resp.Body.Close() // if it is called immediately, the upload will be interrupted also
+			common.Close(body)
 			wrc.Close()
 			return
 		}
