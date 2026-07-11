@@ -1,0 +1,44 @@
+{
+  "log": {
+    "loglevel": "debug"
+  },
+  "inbounds": [
+    {
+      "listen": "127.0.0.1",
+      "port": 13112,
+      "protocol": "socks",
+      "settings": {
+        "auth": "noauth",
+        "udp": true
+      }
+    }
+  ],
+  "outbounds": [
+    {
+      "protocol": "vless",
+      "settings": {
+        "address": "127.0.0.1",
+        "port": 28002,
+        "id": "9b65b7e1-04c8-4717-8f45-2aa61fd25937",
+        "encryption": "none"
+      },
+      "streamSettings": {
+        "network": "xhttp",
+        "security": "tls",
+        "xhttpSettings": {
+          "mode": "stream-up",
+          "host": "localhost",
+          "path": "/xhttp-stream-up",
+          "xPaddingBytes": "64-256"
+        },
+        "tlsSettings": {
+          "serverName": "localhost",
+          "pinnedPeerCertSha256": "94:00:95:2D:3B:E1:05:81:EB:70:1F:78:DE:E6:C2:0D:78:EC:6E:5B:D7:D8:4B:3D:F4:AC:F0:87:15:71:8B:7D",
+          "alpn": [
+            "h2"
+          ]
+        }
+      }
+    }
+  ]
+}
