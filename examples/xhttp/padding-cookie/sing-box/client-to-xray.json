@@ -1,0 +1,42 @@
+{
+  "log": {
+    "level": "debug"
+  },
+  "inbounds": [
+    {
+      "type": "mixed",
+      "tag": "mixed-in",
+      "listen": "127.0.0.1",
+      "listen_port": 13106
+    }
+  ],
+  "outbounds": [
+    {
+      "type": "vless",
+      "tag": "vless-out",
+      "server": "127.0.0.1",
+      "server_port": 28016,
+      "uuid": "9b65b7e1-04c8-4717-8f45-2aa61fd25937",
+      "tls": {
+        "enabled": true,
+        "server_name": "localhost",
+        "insecure": true,
+        "alpn": [
+          "h2"
+        ]
+      },
+      "transport": {
+        "type": "xhttp",
+        "mode": "stream-up",
+        "host": "localhost",
+        "path": "/xhttp-padcookie",
+        "x_padding_bytes": "64-256",
+        "x_padding_obfs_mode": true,
+        "x_padding_placement": "cookie"
+      }
+    }
+  ],
+  "route": {
+    "final": "vless-out"
+  }
+}
