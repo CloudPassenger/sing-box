@@ -46,6 +46,8 @@ Authentication username.
 
 #### password
 
+==Required==
+
 Authentication password.
 
 #### health_check

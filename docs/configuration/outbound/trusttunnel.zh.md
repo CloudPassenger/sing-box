@@ -46,6 +46,8 @@ icon: material/new-box
 
 #### password
 
+==必填==
+
 认证密码。
 
 #### health_check
