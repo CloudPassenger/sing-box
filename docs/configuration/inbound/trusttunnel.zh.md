@@ -20,7 +20,7 @@ icon: material/new-box
     }
   ],
   "quic_congestion_control": "bbr",
-  "network": "tcp,udp",
+  "network": ["tcp", "udp"],
   "tls": {}
 }
 ```
@@ -72,6 +72,8 @@ QUIC 拥塞控制算法。
 
 - `tcp` (HTTP/2)
 - `udp` (HTTP/3)
+
+默认启用两者。
 
 当启用 `udp` 时，必须启用 `tls`。
 

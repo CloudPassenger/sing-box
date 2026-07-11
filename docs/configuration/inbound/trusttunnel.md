@@ -20,7 +20,7 @@ icon: material/new-box
     }
   ],
   "quic_congestion_control": "bbr",
-  "network": "tcp,udp",
+  "network": ["tcp", "udp"],
   "tls": {}
 }
 ```
@@ -72,6 +72,8 @@ Available values:
 
 - `tcp` (HTTP/2)
 - `udp` (HTTP/3)
+
+Both are enabled by default.
 
 When `udp` is enabled, `tls` must be enabled.
 
