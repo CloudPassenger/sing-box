@@ -10,7 +10,8 @@
   "method": "2022-blake3-aes-128-gcm",
   "password": "8JCsPssfgS8tiRwiMlhARg==",
   "managed": false,
-  "multiplex": {}
+  "multiplex": {},
+  "speed_test": "allow"
 }
 ```
 
@@ -26,7 +27,8 @@
       "password": "PCD2Z4o12bKUoFa3cC97Hw=="
     }
   ],
-  "multiplex": {}
+  "multiplex": {},
+  "speed_test": "allow"
 }
 ```
 
@@ -94,3 +96,9 @@
 #### multiplex
 
 参阅 [多路复用](/zh/configuration/shared/multiplex#入站)。
+
+#### speed_test
+
+参阅 [私有测速](/zh/configuration/shared/private-speedtest/)。
+
+配置 `destinations` 时不支持。

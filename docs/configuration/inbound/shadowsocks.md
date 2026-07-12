@@ -10,7 +10,8 @@
   "method": "2022-blake3-aes-128-gcm",
   "password": "8JCsPssfgS8tiRwiMlhARg==",
   "managed": false,
-  "multiplex": {}
+  "multiplex": {},
+  "speed_test": "allow"
 }
 ```
 
@@ -26,7 +27,8 @@
       "password": "PCD2Z4o12bKUoFa3cC97Hw=="
     }
   ],
-  "multiplex": {}
+  "multiplex": {},
+  "speed_test": "allow"
 }
 ```
 
@@ -94,3 +96,9 @@ Defaults to `false`. Enable this when the inbound is managed by the [SSM API](/c
 #### multiplex
 
 See [Multiplex](/configuration/shared/multiplex#inbound) for details.
+
+#### speed_test
+
+See [Private Speed Test](/configuration/shared/private-speedtest/) for details.
+
+Not supported when `destinations` is configured.

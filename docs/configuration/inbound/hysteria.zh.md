@@ -25,7 +25,8 @@
   "recv_window_client": 0,
   "max_conn_client": 0,
   "disable_mtu_discovery": false,
-  "tls": {}
+  "tls": {},
+  "speed_test": "allow"
 }
 ```
 
@@ -105,3 +106,7 @@ base64 编码的认证密码。
 ==必填==
 
 TLS 配置, 参阅 [TLS](/zh/configuration/shared/tls/#入站)。
+
+#### speed_test
+
+参阅 [私有测速](/zh/configuration/shared/private-speedtest/)。

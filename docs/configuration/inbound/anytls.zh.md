@@ -20,7 +20,8 @@ icon: material/new-box
     }
   ],
   "padding_scheme": [],
-  "tls": {}
+  "tls": {},
+  "speed_test": "allow"
 }
 ```
 
@@ -59,3 +60,7 @@ AnyTLS 填充方案行数组。
 #### tls
 
 TLS 配置, 参阅 [TLS](/zh/configuration/shared/tls/#入站)。
+
+#### speed_test
+
+参阅 [私有测速](/zh/configuration/shared/private-speedtest/)。

@@ -18,6 +18,7 @@ type HysteriaInboundOptions struct {
 	MaxConnClient       int                             `json:"max_conn_client,omitempty"`
 	DisableMTUDiscovery bool                            `json:"disable_mtu_discovery,omitempty"`
 	InboundTLSOptionsContainer
+	InboundSpeedTestOptions
 }
 
 type HysteriaUser struct {
