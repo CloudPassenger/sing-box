@@ -7,6 +7,7 @@ import (
 	"github.com/sagernet/sing-box/adapter"
 	"github.com/sagernet/sing-box/adapter/inbound"
 	"github.com/sagernet/sing-box/common/listener"
+	"github.com/sagernet/sing-box/common/speedtest"
 	"github.com/sagernet/sing-box/common/tls"
 	C "github.com/sagernet/sing-box/constant"
 	"github.com/sagernet/sing-box/log"
@@ -50,11 +51,15 @@ func NewInbound(ctx context.Context, router adapter.Router, logger log.ContextLo
 	}); invalidIndex >= 0 {
 		return nil, E.New("missing username or password of user ", invalidIndex)
 	}
+	speedTestRouter, err := speedtest.NewRouter(router, logger, options.SpeedTest)
+	if err != nil {
+		return nil, err
+	}
 	inbound := &Inbound{
 		Adapter: inbound.NewAdapter(C.TypeTrustTunnel, tag),
 		ctx:     ctx,
 		logger:  logger,
-		router:  router,
+		router:  speedTestRouter,
 		listener: listener.New(listener.Options{
 			Context: ctx,
 			Logger:  logger,

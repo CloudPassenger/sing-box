@@ -10,6 +10,7 @@ type TrustTunnelInboundOptions struct {
 	QUICCongestionControl string      `json:"quic_congestion_control,omitempty"`
 	Network               NetworkList `json:"network,omitempty"`
 	InboundTLSOptionsContainer
+	InboundSpeedTestOptions
 }
 
 type TrustTunnelOutboundOptions struct {

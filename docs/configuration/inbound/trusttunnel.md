@@ -21,7 +21,8 @@ icon: material/new-box
   ],
   "quic_congestion_control": "bbr",
   "network": ["tcp", "udp"],
-  "tls": {}
+  "tls": {},
+  "speed_test": "allow"
 }
 ```
 
@@ -76,6 +77,10 @@ Available values:
 Both are enabled by default.
 
 When `udp` is enabled, `tls` must be enabled.
+
+#### speed_test
+
+See [Private Speed Test](/configuration/shared/private-speedtest/) for details.
 
 #### tls
 

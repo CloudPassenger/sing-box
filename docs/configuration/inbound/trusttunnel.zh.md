@@ -21,7 +21,8 @@ icon: material/new-box
   ],
   "quic_congestion_control": "bbr",
   "network": ["tcp", "udp"],
-  "tls": {}
+  "tls": {},
+  "speed_test": "allow"
 }
 ```
 
@@ -76,6 +77,10 @@ QUIC 拥塞控制算法。
 默认启用两者。
 
 当启用 `udp` 时，必须启用 `tls`。
+
+#### speed_test
+
+参阅 [私有测速](/zh/configuration/shared/private-speedtest/)。
 
 #### tls
 
