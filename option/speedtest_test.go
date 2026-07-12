@@ -29,6 +29,7 @@ func TestInboundSpeedTestOptionsJSONRoundTrip(t *testing.T) {
 		{"Hysteria2InboundOptions", &Hysteria2InboundOptions{InboundSpeedTestOptions: InboundSpeedTestOptions{SpeedTest: "allow"}}, func(v any) string { return v.(*Hysteria2InboundOptions).SpeedTest }},
 		{"VLESSInboundOptions", &VLESSInboundOptions{InboundSpeedTestOptions: InboundSpeedTestOptions{SpeedTest: "allow"}}, func(v any) string { return v.(*VLESSInboundOptions).SpeedTest }},
 		{"AnyTLSInboundOptions", &AnyTLSInboundOptions{InboundSpeedTestOptions: InboundSpeedTestOptions{SpeedTest: "allow"}}, func(v any) string { return v.(*AnyTLSInboundOptions).SpeedTest }},
+		{"TrustTunnelInboundOptions", &TrustTunnelInboundOptions{InboundSpeedTestOptions: InboundSpeedTestOptions{SpeedTest: "allow"}}, func(v any) string { return v.(*TrustTunnelInboundOptions).SpeedTest }},
 	}
 
 	for _, tc := range cases {

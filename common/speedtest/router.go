@@ -51,8 +51,12 @@ type Router struct {
 	mode   handleOption
 }
 
+func isMagicAddress(fqdn string) bool {
+	return fqdn == MagicAddress || fqdn == LegacyMagicAddress
+}
+
 func (r *Router) RouteConnection(ctx context.Context, conn net.Conn, metadata adapter.InboundContext) error {
-	if metadata.Destination.Fqdn != MagicAddress {
+	if !isMagicAddress(metadata.Destination.Fqdn) {
 		return r.router.RouteConnection(ctx, conn, metadata)
 	}
 	err := r.speedTest(ctx, conn, metadata.Source)
@@ -67,7 +71,7 @@ func (r *Router) RoutePacketConnection(ctx context.Context, conn N.PacketConn, m
 }
 
 func (r *Router) RouteConnectionEx(ctx context.Context, conn net.Conn, metadata adapter.InboundContext, onClose N.CloseHandlerFunc) {
-	if metadata.Destination.Fqdn != MagicAddress {
+	if !isMagicAddress(metadata.Destination.Fqdn) {
 		r.router.RouteConnectionEx(ctx, conn, metadata, onClose)
 		return
 	}

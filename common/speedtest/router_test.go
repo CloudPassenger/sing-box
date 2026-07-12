@@ -304,3 +304,24 @@ func TestRouterInvokesOnCloseForSpeedTest(t *testing.T) {
 		t.Fatal("onClose was not invoked")
 	}
 }
+
+func TestRouterAcceptsLegacyMagicAddress(t *testing.T) {
+	t.Parallel()
+	upstream := &stubRouter{}
+	router, err := NewRouter(upstream, logger.NOP(), "allow")
+	require.NoError(t, err)
+
+	serverConn, clientConn := tcpPipe(t)
+	done := make(chan struct{})
+	go func() {
+		router.RouteConnectionEx(context.Background(), serverConn, adapter.InboundContext{
+			Destination: M.Socksaddr{Fqdn: LegacyMagicAddress},
+		}, nil)
+		close(done)
+	}()
+
+	err = DownloadTest(context.Background(), clientConn, 4096, func(time.Duration, uint32, bool) {})
+	require.NoError(t, err)
+	<-done
+	require.False(t, upstream.routeConnectionExCalled)
+}
