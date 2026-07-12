@@ -9,6 +9,7 @@ import (
 	"github.com/sagernet/sing-box/adapter/inbound"
 	"github.com/sagernet/sing-box/common/listener"
 	"github.com/sagernet/sing-box/common/mux"
+	"github.com/sagernet/sing-box/common/speedtest"
 	"github.com/sagernet/sing-box/common/uot"
 	C "github.com/sagernet/sing-box/constant"
 	"github.com/sagernet/sing-box/log"
@@ -35,6 +36,9 @@ func NewInbound(ctx context.Context, router adapter.Router, logger log.ContextLo
 	} else if options.Managed && (len(options.Users) > 0 || len(options.Destinations) > 0) {
 		return nil, E.New("users and destinations options are not supported in managed servers")
 	}
+	if len(options.Destinations) > 0 && options.SpeedTest != "" && options.SpeedTest != "disable" {
+		return nil, E.New("speed_test is not supported with shadowsocks destinations")
+	}
 	if len(options.Users) > 0 || options.Managed {
 		return newMultiInbound(ctx, router, logger, tag, options)
 	} else if len(options.Destinations) > 0 {
@@ -56,13 +60,16 @@ type Inbound struct {
 }
 
 func newInbound(ctx context.Context, router adapter.Router, logger log.ContextLogger, tag string, options option.ShadowsocksInboundOptions) (*Inbound, error) {
+	speedTestRouter, err := speedtest.NewRouter(router, logger, options.SpeedTest)
+	if err != nil {
+		return nil, err
+	}
 	inbound := &Inbound{
 		Adapter: inbound.NewAdapter(C.TypeShadowsocks, tag),
 		ctx:     ctx,
-		router:  uot.NewRouter(router, logger),
+		router:  uot.NewRouter(speedTestRouter, logger),
 		logger:  logger,
 	}
-	var err error
 	inbound.router, err = mux.NewRouterWithOptions(inbound.router, logger, common.PtrValueOrDefault(options.Multiplex))
 	if err != nil {
 		return nil, err

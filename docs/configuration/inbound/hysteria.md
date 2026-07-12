@@ -22,6 +22,7 @@
   ],
   
   "tls": {},
+  "speed_test": "allow",
 
   ... // QUIC Fields
 
@@ -86,6 +87,10 @@ Authentication password.
 ==Required==
 
 TLS configuration, see [TLS](/configuration/shared/tls/#inbound).
+
+#### speed_test
+
+See [Private Speed Test](/configuration/shared/private-speedtest/) for details.
 
 ### QUIC Fields
 

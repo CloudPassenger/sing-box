@@ -19,7 +19,8 @@
 }
 ],
 "quic_congestion_control": "",
-"tls": {}
+"tls": {},
+"speed_test": "allow"
 }
 ```
 
@@ -58,3 +59,7 @@ QUIC congestion control algorithm.
 #### tls
 
 TLS configuration, see [TLS](/configuration/shared/tls/#inbound).
+
+#### speed_test
+
+See [Private Speed Test](/configuration/shared/private-speedtest/) for details.

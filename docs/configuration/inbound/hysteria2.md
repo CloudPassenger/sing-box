@@ -55,7 +55,8 @@ icon: material/alert-decagram
       "lifetime": ""
     },
     "http_client": {}
-  }
+  },
+  "speed_test": "allow"
 }
 ```
 
@@ -280,3 +281,6 @@ Lease lifetime of the mapping; it is renewed at half the lifetime.
 HTTP client used to talk to the realm.
 
 See [HTTP Client](/configuration/shared/http-client/) for details.
+#### speed_test
+
+See [Private Speed Test](/configuration/shared/private-speedtest/) for details.
