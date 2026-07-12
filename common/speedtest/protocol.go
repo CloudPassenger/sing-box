@@ -13,8 +13,10 @@ import (
 )
 
 const (
-	// MagicAddress is the reserved FQDN destination used to trigger the private speedtest protocol.
-	MagicAddress = "@SpeedTest"
+	// MagicAddress is the reserved sing-box FQDN destination used to trigger the private speedtest protocol.
+	MagicAddress = "sp.speedtest.sing-box.arpa"
+	// LegacyMagicAddress is the Hysteria 2 compatible speedtest destination.
+	LegacyMagicAddress = "@SpeedTest"
 
 	TypeDownload = 0x01
 	TypeUpload   = 0x02

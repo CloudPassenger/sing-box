@@ -3,8 +3,8 @@ package option
 // InboundSpeedTestOptions is embedded by inbounds that support the private
 // speedtest protocol.
 type InboundSpeedTestOptions struct {
-	// SpeedTest controls how the inbound handles private speedtest
-	// requests (destination `@SpeedTest`).
+	// SpeedTest controls how the inbound handles private speedtest requests
+	// addressed to the reserved sing-box or Hysteria 2 compatible destination.
 	//
 	// Available values:
 	//

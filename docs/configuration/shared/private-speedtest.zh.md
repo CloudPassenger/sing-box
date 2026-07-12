@@ -37,21 +37,21 @@ icon: material/new-box
 | 入站                   | 说明                          |
 |------------------------|-------------------------------|
 | [AnyTLS](/zh/configuration/inbound/anytls/)         |                                |
+| [HTTP](/zh/configuration/inbound/http/)             |                                |
 | [Hysteria](/zh/configuration/inbound/hysteria/)     |                                |
 | [Hysteria2](/zh/configuration/inbound/hysteria2/)   |                                |
-| [Mixed](/zh/configuration/inbound/mixed/)           | 仅能通过其 SOCKS 监听端触发；对同一入站的 HTTP CONNECT 无法携带该魔法目标 |
+| [Mixed](/zh/configuration/inbound/mixed/)           |                                |
 | [Naive](/zh/configuration/inbound/naive/)           |                                |
 | [Shadowsocks](/zh/configuration/inbound/shadowsocks/) | 配置 `destinations` 时不支持 |
 | [SOCKS](/zh/configuration/inbound/socks/)           |                                |
 | [Trojan](/zh/configuration/inbound/trojan/)         |                                |
+| [TrustTunnel](/zh/configuration/inbound/trusttunnel/) |                              |
 | [TUIC](/zh/configuration/inbound/tuic/)             |                                |
 | [VLESS](/zh/configuration/inbound/vless/)           | 包含 VLESS Encryption 与 XHTTP 传输层 |
 | [VMess](/zh/configuration/inbound/vmess/)           |                                |
 
-Direct、Tun、Redirect、TProxy、HTTP、TrustTunnel 和 ShadowTLS 都无法以与该魔法 FQDN 兼容的方式接受客户端任意选择的目标，
-因此无法接收测速请求。HTTP 与 TrustTunnel 被排除是因为它们都通过 HTTP/1.1 或 HTTP/2 CONNECT 隧道，目标主机会变成
-`@SpeedTest`；`@` 字符不是合法的 `Host`/`:authority` 字节（RFC 7230、RFC 9113），请求会在识别出魔法目标之前被拒绝或
-清空主机字段。ShadowTLS 分流后的内层入站（例如 VMess 或 Trojan）可以自行启用 `speed_test`。
+Direct、Tun、Redirect、TProxy 和 ShadowTLS 无法接受客户端任意选择的目标，因此无法接收测速请求。ShadowTLS 分流后的
+内层入站（例如 VMess 或 Trojan）可以自行启用 `speed_test`。
 
 ### 客户端用法
 
@@ -62,6 +62,7 @@ sing-box -c config.json tools speedtest --outbound proxy --data-size 67108864
 | 参数                | 描述                                            |
 |---------------------|-------------------------------------------------|
 | `--outbound, -o`   | 用于测试的出站标签，省略时使用默认出站。         |
+| `--compatible`     | 使用兼容 Hysteria 2 的 `@SpeedTest` 目标。HTTP 和 TrustTunnel 出站不支持此选项。 |
 | `--skip-upload`    | 跳过上传测试。                                   |
 | `--skip-download`  | 跳过下载测试。                                   |
 | `--use-bytes`      | 使用十进制字节每秒代替十进制比特每秒。            |
@@ -71,7 +72,8 @@ sing-box -c config.json tools speedtest --outbound proxy --data-size 67108864
 
 ### 协议详情
 
-客户端通过任意受支持的出站连接目标 `@SpeedTest`；服务器在连接进入路由之前拦截它。
+默认情况下，客户端通过任意受支持的出站连接目标 `sp.speedtest.sing-box.arpa`，服务器会在连接进入路由之前拦截它。
+sing-box 服务端也接受 Hysteria 2 的 `@SpeedTest` 目标以提供兼容性；客户端仅在指定 `--compatible` 时使用该目标。
 
 #### 请求格式
 

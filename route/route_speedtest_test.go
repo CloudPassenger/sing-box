@@ -13,20 +13,23 @@ import (
 )
 
 // TestRouteConnectionRejectsSpeedTestMagicAddress verifies that the core
-// router rejects the private speedtest magic destination before any rule
-// matching or inbound access happens, so inbounds that never installed the
-// speedtest.Router wrapper (disabled, misconfigured, or unsupported) cannot
-// have @SpeedTest forwarded to the outside as a normal domain.
+// router rejects private speedtest destinations before rule matching, so
+// disabled or unsupported inbounds cannot route them externally.
 func TestRouteConnectionRejectsSpeedTestMagicAddress(t *testing.T) {
 	t.Parallel()
-	router := &Router{}
-	serverConn, clientConn := net.Pipe()
-	defer serverConn.Close()
-	defer clientConn.Close()
+	for _, destination := range []string{speedtest.MagicAddress, speedtest.LegacyMagicAddress} {
+		t.Run(destination, func(t *testing.T) {
+			t.Parallel()
+			router := &Router{}
+			serverConn, clientConn := net.Pipe()
+			defer serverConn.Close()
+			defer clientConn.Close()
 
-	err := router.routeConnection(context.Background(), serverConn, adapter.InboundContext{
-		Destination: M.Socksaddr{Fqdn: speedtest.MagicAddress},
-	}, nil)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "invalid speedtest request")
+			err := router.routeConnection(context.Background(), serverConn, adapter.InboundContext{
+				Destination: M.Socksaddr{Fqdn: destination},
+			}, nil)
+			require.Error(t, err)
+			require.Contains(t, err.Error(), "invalid speedtest request")
+		})
+	}
 }

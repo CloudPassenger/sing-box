@@ -5,8 +5,8 @@ import (
 	"os"
 
 	"github.com/sagernet/sing-box"
+	"github.com/sagernet/sing-box/adapter"
 	E "github.com/sagernet/sing/common/exceptions"
-	N "github.com/sagernet/sing/common/network"
 	"github.com/sagernet/sing/service"
 
 	"github.com/spf13/cobra"
@@ -42,7 +42,7 @@ func createPreStartedClient() (*box.Box, error) {
 	return instance, nil
 }
 
-func createDialer(instance *box.Box, outboundTag string) (N.Dialer, error) {
+func createDialer(instance *box.Box, outboundTag string) (adapter.Outbound, error) {
 	if outboundTag == "" {
 		return instance.Outbound().Default(), nil
 	} else {

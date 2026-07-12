@@ -14,7 +14,8 @@
     }
   ],
   "tls": {},
-  "set_system_proxy": false
+  "set_system_proxy": false,
+  "speed_test": "allow"
 }
 ```
 
@@ -33,6 +34,10 @@ TLS configuration, see [TLS](/configuration/shared/tls/#inbound).
 HTTP users.
 
 No authentication required if empty.
+
+#### speed_test
+
+See [Private Speed Test](/configuration/shared/private-speedtest/) for details.
 
 #### set_system_proxy
 

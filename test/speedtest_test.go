@@ -15,6 +15,7 @@ import (
 	C "github.com/sagernet/sing-box/constant"
 	"github.com/sagernet/sing-box/option"
 	"github.com/sagernet/sing/common"
+	"github.com/sagernet/sing/common/auth"
 	"github.com/sagernet/sing/common/json/badoption"
 	M "github.com/sagernet/sing/common/metadata"
 	N "github.com/sagernet/sing/common/network"
@@ -108,6 +109,8 @@ func TestPrivateSpeedTest(t *testing.T) {
 	t.Run("hysteria", testSpeedTestHysteria)
 	t.Run("hysteria2", testSpeedTestHysteria2)
 	t.Run("mixed", testSpeedTestMixed)
+	t.Run("http", testSpeedTestHTTP)
+	t.Run("trusttunnel", testSpeedTestTrustTunnel)
 	t.Run("shadowsocks_single", testSpeedTestShadowsocksSingle)
 	t.Run("shadowsocks_multi", testSpeedTestShadowsocksMulti)
 	t.Run("socks", testSpeedTestSocks)
@@ -280,6 +283,86 @@ func testSpeedTestMixed(t *testing.T) {
 		},
 	})
 	runSpeedTestAgainstOutbound(t, mustOutbound(t, instance, "mixed-out"))
+}
+
+func testSpeedTestHTTP(t *testing.T) {
+	instance := startInstance(t, option.Options{
+		Inbounds: []option.Inbound{
+			{
+				Type: C.TypeHTTP,
+				Tag:  "http-in",
+				Options: &option.HTTPMixedInboundOptions{
+					ListenOptions: option.ListenOptions{
+						Listen:     common.Ptr(badoption.Addr(netip.IPv4Unspecified())),
+						ListenPort: serverPort,
+					},
+					InboundSpeedTestOptions: option.InboundSpeedTestOptions{SpeedTest: "allow"},
+				},
+			},
+		},
+		Outbounds: []option.Outbound{
+			{Type: C.TypeDirect},
+			{
+				Type: C.TypeHTTP,
+				Tag:  "http-out",
+				Options: &option.HTTPOutboundOptions{
+					ServerOptions: option.ServerOptions{Server: "127.0.0.1", ServerPort: serverPort},
+				},
+			},
+		},
+	})
+	runSpeedTestAgainstOutbound(t, mustOutbound(t, instance, "http-out"))
+}
+
+func testSpeedTestTrustTunnel(t *testing.T) {
+	_, certPem, keyPem := createSelfSignedCertificate(t, "example.org")
+	instance := startInstance(t, option.Options{
+		Inbounds: []option.Inbound{
+			{
+				Type: C.TypeTrustTunnel,
+				Tag:  "trusttunnel-in",
+				Options: &option.TrustTunnelInboundOptions{
+					ListenOptions: option.ListenOptions{
+						Listen:     common.Ptr(badoption.Addr(netip.IPv4Unspecified())),
+						ListenPort: serverPort,
+					},
+					Users:   []auth.User{{Username: "sekai", Password: "password"}},
+					Network: N.NetworkTCP,
+					InboundTLSOptionsContainer: option.InboundTLSOptionsContainer{
+						TLS: &option.InboundTLSOptions{
+							Enabled:         true,
+							ServerName:      "example.org",
+							ALPN:            []string{"h2"},
+							CertificatePath: certPem,
+							KeyPath:         keyPem,
+						},
+					},
+					InboundSpeedTestOptions: option.InboundSpeedTestOptions{SpeedTest: "allow"},
+				},
+			},
+		},
+		Outbounds: []option.Outbound{
+			{Type: C.TypeDirect},
+			{
+				Type: C.TypeTrustTunnel,
+				Tag:  "trusttunnel-out",
+				Options: &option.TrustTunnelOutboundOptions{
+					ServerOptions: option.ServerOptions{Server: "127.0.0.1", ServerPort: serverPort},
+					Username:      "sekai",
+					Password:      "password",
+					OutboundTLSOptionsContainer: option.OutboundTLSOptionsContainer{
+						TLS: &option.OutboundTLSOptions{
+							Enabled:         true,
+							ServerName:      "example.org",
+							ALPN:            []string{"h2"},
+							CertificatePath: certPem,
+						},
+					},
+				},
+			},
+		},
+	})
+	runSpeedTestAgainstOutbound(t, mustOutbound(t, instance, "trusttunnel-out"))
 }
 
 func testSpeedTestShadowsocksSingle(t *testing.T) {

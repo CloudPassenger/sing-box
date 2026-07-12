@@ -8,6 +8,7 @@ import (
 
 	"github.com/sagernet/sing-box/adapter"
 	"github.com/sagernet/sing-box/common/speedtest"
+	C "github.com/sagernet/sing-box/constant"
 	"github.com/sagernet/sing/common/logger"
 	M "github.com/sagernet/sing/common/metadata"
 	N "github.com/sagernet/sing/common/network"
@@ -61,10 +62,14 @@ func (r *fakeSpeedTestRouter) RoutePacketConnectionEx(ctx context.Context, conn 
 // destination, letting tests point the CLI at a local speedtest server
 // regardless of the requested magic FQDN.
 type speedTestDialer struct {
-	addr string
+	addr         string
+	destinations chan M.Socksaddr
 }
 
 func (d *speedTestDialer) DialContext(ctx context.Context, network string, destination M.Socksaddr) (net.Conn, error) {
+	if d.destinations != nil {
+		d.destinations <- destination
+	}
 	return net.Dial(network, d.addr)
 }
 
@@ -154,4 +159,112 @@ func TestRunSpeedTestRejected(t *testing.T) {
 		quiet:    true,
 	})
 	require.Error(t, err)
+}
+
+func TestRunSpeedTestSelectsMagicAddress(t *testing.T) {
+	t.Parallel()
+	for _, testCase := range []struct {
+		name       string
+		compatible bool
+		expected   string
+	}{
+		{"default", false, speedtest.MagicAddress},
+		{"compatible", true, speedtest.LegacyMagicAddress},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+			addr := startSpeedTestServer(t, "allow")
+			destinations := make(chan M.Socksaddr, 1)
+			dialer := &speedTestDialer{addr: addr, destinations: destinations}
+			err := runSpeedTest(context.Background(), dialer, speedTestCommandOptions{
+				skipUpload: true,
+				compatible: testCase.compatible,
+				dataSize:   4096,
+				timeout:    5 * time.Second,
+				quiet:      true,
+			})
+			require.NoError(t, err)
+			require.Equal(t, testCase.expected, (<-destinations).Fqdn)
+		})
+	}
+}
+
+type typedSpeedTestOutbound struct {
+	adapter.Outbound
+	outboundType string
+	tag          string
+	networks     []string
+}
+
+func (o *typedSpeedTestOutbound) Type() string      { return o.outboundType }
+func (o *typedSpeedTestOutbound) Tag() string       { return o.tag }
+func (o *typedSpeedTestOutbound) Network() []string { return o.networks }
+
+type groupedSpeedTestOutbound struct {
+	*typedSpeedTestOutbound
+	selected string
+	all      []string
+}
+
+func (o *groupedSpeedTestOutbound) Now() string   { return o.selected }
+func (o *groupedSpeedTestOutbound) All() []string { return o.all }
+
+type speedTestOutboundManager struct {
+	adapter.OutboundManager
+	outbounds map[string]adapter.Outbound
+}
+
+func (m *speedTestOutboundManager) Outbound(tag string) (adapter.Outbound, bool) {
+	outbound, loaded := m.outbounds[tag]
+	return outbound, loaded
+}
+
+func TestValidateCompatibleSpeedTestOutbound(t *testing.T) {
+	t.Parallel()
+	for _, outboundType := range []string{C.TypeHTTP, C.TypeTrustTunnel} {
+		t.Run(outboundType, func(t *testing.T) {
+			t.Parallel()
+			outbound := &typedSpeedTestOutbound{outboundType: outboundType, tag: "proxy"}
+			err := validateCompatibleSpeedTestOutbound(&speedTestOutboundManager{}, outbound)
+			require.Error(t, err)
+			require.Contains(t, err.Error(), outboundType)
+		})
+	}
+
+	t.Run("supported", func(t *testing.T) {
+		t.Parallel()
+		outbound := &typedSpeedTestOutbound{outboundType: C.TypeSOCKS, tag: "proxy"}
+		require.NoError(t, validateCompatibleSpeedTestOutbound(&speedTestOutboundManager{}, outbound))
+	})
+
+	t.Run("selected group outbound", func(t *testing.T) {
+		t.Parallel()
+		httpOutbound := &typedSpeedTestOutbound{outboundType: C.TypeHTTP, tag: "http"}
+		group := &groupedSpeedTestOutbound{
+			typedSpeedTestOutbound: &typedSpeedTestOutbound{outboundType: C.TypeSelector, tag: "proxy"},
+			selected:               httpOutbound.Tag(),
+			all:                    []string{httpOutbound.Tag()},
+		}
+		manager := &speedTestOutboundManager{outbounds: map[string]adapter.Outbound{httpOutbound.Tag(): httpOutbound}}
+		err := validateCompatibleSpeedTestOutbound(manager, group)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), C.TypeHTTP)
+	})
+
+	t.Run("unselected urltest outbound", func(t *testing.T) {
+		t.Parallel()
+		httpOutbound := &typedSpeedTestOutbound{
+			outboundType: C.TypeHTTP,
+			tag:          "http",
+			networks:     []string{N.NetworkTCP},
+		}
+		group := &groupedSpeedTestOutbound{
+			typedSpeedTestOutbound: &typedSpeedTestOutbound{outboundType: C.TypeURLTest, tag: "proxy"},
+			all:                    []string{httpOutbound.Tag()},
+		}
+		manager := &speedTestOutboundManager{outbounds: map[string]adapter.Outbound{httpOutbound.Tag(): httpOutbound}}
+		err := validateCompatibleSpeedTestOutbound(manager, group)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), C.TypeHTTP)
+	})
 }
