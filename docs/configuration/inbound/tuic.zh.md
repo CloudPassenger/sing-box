@@ -18,7 +18,8 @@
   "auth_timeout": "3s",
   "zero_rtt_handshake": false,
   "heartbeat": "10s",
-  "tls": {}
+  "tls": {},
+  "speed_test": "allow"
 }
 ```
 
@@ -76,3 +77,7 @@ QUIC 拥塞控制算法
 ==必填==
 
 TLS 配置, 参阅 [TLS](/zh/configuration/shared/tls/#入站)。
+
+#### speed_test
+
+参阅 [私有测速](/zh/configuration/shared/private-speedtest/)。

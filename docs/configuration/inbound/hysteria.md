@@ -25,7 +25,8 @@
   "recv_window_client": 0,
   "max_conn_client": 0,
   "disable_mtu_discovery": false,
-  "tls": {}
+  "tls": {},
+  "speed_test": "allow"
 }
 ```
 
@@ -105,3 +106,7 @@ Force enabled on for systems other than Linux and Windows (according to upstream
 ==Required==
 
 TLS configuration, see [TLS](/configuration/shared/tls/#inbound).
+
+#### speed_test
+
+See [Private Speed Test](/configuration/shared/private-speedtest/) for details.

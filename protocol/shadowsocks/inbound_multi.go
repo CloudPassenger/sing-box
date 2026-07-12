@@ -10,6 +10,7 @@ import (
 	"github.com/sagernet/sing-box/adapter/inbound"
 	"github.com/sagernet/sing-box/common/listener"
 	"github.com/sagernet/sing-box/common/mux"
+	"github.com/sagernet/sing-box/common/speedtest"
 	"github.com/sagernet/sing-box/common/uot"
 	C "github.com/sagernet/sing-box/constant"
 	"github.com/sagernet/sing-box/log"
@@ -45,13 +46,16 @@ type MultiInbound struct {
 }
 
 func newMultiInbound(ctx context.Context, router adapter.Router, logger log.ContextLogger, tag string, options option.ShadowsocksInboundOptions) (*MultiInbound, error) {
+	speedTestRouter, err := speedtest.NewRouter(router, logger, options.SpeedTest)
+	if err != nil {
+		return nil, err
+	}
 	inbound := &MultiInbound{
 		Adapter: inbound.NewAdapter(C.TypeShadowsocks, tag),
 		ctx:     ctx,
-		router:  uot.NewRouter(router, logger),
+		router:  uot.NewRouter(speedTestRouter, logger),
 		logger:  logger,
 	}
-	var err error
 	inbound.router, err = mux.NewRouterWithOptions(inbound.router, logger, common.PtrValueOrDefault(options.Multiplex))
 	if err != nil {
 		return nil, err

@@ -22,6 +22,7 @@ type NaiveInboundOptions struct {
 	Network               NetworkList `json:"network,omitempty"`
 	QUICCongestionControl string      `json:"quic_congestion_control,omitempty"`
 	InboundTLSOptionsContainer
+	InboundSpeedTestOptions
 }
 
 type NaiveOutboundOptions struct {

@@ -10,6 +10,7 @@ type TUICInboundOptions struct {
 	ZeroRTTHandshake  bool               `json:"zero_rtt_handshake,omitempty"`
 	Heartbeat         badoption.Duration `json:"heartbeat,omitempty"`
 	InboundTLSOptionsContainer
+	InboundSpeedTestOptions
 }
 
 type TUICUser struct {
