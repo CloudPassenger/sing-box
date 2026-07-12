@@ -14,7 +14,8 @@
     }
   ],
   "tls": {},
-  "set_system_proxy": false
+  "set_system_proxy": false,
+  "speed_test": "allow"
 }
 ```
 
@@ -33,6 +34,10 @@ TLS 配置, 参阅 [TLS](/zh/configuration/shared/tls/#入站)。
 HTTP 用户
 
 如果为空则不需要验证。
+
+#### speed_test
+
+参阅 [私有测速](/zh/configuration/shared/private-speedtest/)。
 
 #### set_system_proxy
 

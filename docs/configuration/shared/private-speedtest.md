@@ -39,23 +39,21 @@ Available values:
 | Inbound             | Notes                                          |
 |----------------------|-------------------------------------------------|
 | [AnyTLS](/configuration/inbound/anytls/)         |                                                  |
+| [HTTP](/configuration/inbound/http/)             |                                                  |
 | [Hysteria](/configuration/inbound/hysteria/)     |                                                  |
 | [Hysteria2](/configuration/inbound/hysteria2/)   |                                                  |
-| [Mixed](/configuration/inbound/mixed/)           | Only reachable via its SOCKS listener; HTTP CONNECT to the same inbound cannot carry the magic destination |
+| [Mixed](/configuration/inbound/mixed/)           |                                                  |
 | [Naive](/configuration/inbound/naive/)           |                                                  |
 | [Shadowsocks](/configuration/inbound/shadowsocks/) | Not supported when `destinations` is configured |
 | [SOCKS](/configuration/inbound/socks/)           |                                                  |
 | [Trojan](/configuration/inbound/trojan/)         |                                                  |
+| [TrustTunnel](/configuration/inbound/trusttunnel/) |                                                |
 | [TUIC](/configuration/inbound/tuic/)             |                                                  |
 | [VLESS](/configuration/inbound/vless/)           | Including VLESS Encryption and XHTTP transport  |
 | [VMess](/configuration/inbound/vmess/)           |                                                  |
 
-Direct, Tun, Redirect, TProxy, HTTP, TrustTunnel, and ShadowTLS do not accept an arbitrary client-chosen destination
-through a channel compatible with the magic FQDN and therefore cannot receive speedtest requests. HTTP and
-TrustTunnel are excluded because both tunnel through an HTTP/1.1 or HTTP/2 CONNECT request whose target host becomes
-`@SpeedTest`; the `@` character is not a valid `Host`/`:authority` byte (RFC 7230, RFC 9113), so the request is
-rejected or its host is stripped before the magic destination can be recognized. A ShadowTLS detour's inner inbound
-(e.g. VMess or Trojan) can enable `speed_test` itself.
+Direct, Tun, Redirect, TProxy, and ShadowTLS do not accept an arbitrary client-chosen destination and therefore cannot
+receive speedtest requests. A ShadowTLS detour's inner inbound (e.g. VMess or Trojan) can enable `speed_test` itself.
 
 ### Client usage
 
@@ -63,20 +61,22 @@ rejected or its host is stripped before the magic destination can be recognized.
 sing-box -c config.json tools speedtest --outbound proxy --data-size 67108864
 ```
 
-| Flag              | Description                                                     |
-|--------------------|-------------------------------------------------------------------|
+| Flag              | Description                                                       |
+|-------------------|-------------------------------------------------------------------|
 | `--outbound, -o`  | Outbound tag to test through, default outbound if omitted.        |
+| `--compatible`    | Use the Hysteria 2 compatible `@SpeedTest` destination. Not supported by HTTP or TrustTunnel outbounds. |
 | `--skip-upload`   | Skip the upload test.                                              |
-| `--skip-download` | Skip the download test.                                           |
+| `--skip-download` | Skip the download test.                                            |
 | `--use-bytes`     | Report decimal bytes per second instead of decimal bits per second. |
 | `--quiet`         | Suppress progress output.                                          |
 | `--data-size`     | Data size for download and upload tests, in bytes.                 |
-| `--timeout`       | Limit duration for each direction.                                 |
+| `--timeout`       | Limit duration for each direction.                                |
 
 ### Protocol details
 
-The client connects to the destination `@SpeedTest` on any supported outbound; the server intercepts it before the
-connection reaches routing.
+By default, the client connects to `sp.speedtest.sing-box.arpa` on any supported outbound. The server intercepts the
+destination before the connection reaches routing. sing-box servers also accept the Hysteria 2 `@SpeedTest`
+destination for compatibility; clients use it only when `--compatible` is specified.
 
 #### Request format
 

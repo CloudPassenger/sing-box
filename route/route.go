@@ -98,7 +98,7 @@ func (r *Router) routeConnection(ctx context.Context, conn net.Conn, metadata ad
 		return E.New("global UoT not supported since sing-box v1.7.0.")
 	case uot.LegacyMagicAddress:
 		return E.New("global UoT (legacy) not supported since sing-box v1.7.0.")
-	case speedtest.MagicAddress:
+	case speedtest.MagicAddress, speedtest.LegacyMagicAddress:
 		return E.New("invalid speedtest request")
 	}
 	if metadata.InboundType == C.TypeTun && metadata.Protocol == C.ProtocolDNS {
