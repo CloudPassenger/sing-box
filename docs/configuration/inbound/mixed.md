@@ -15,7 +15,8 @@
       "password": "admin"
     }
   ],
-  "set_system_proxy": false
+  "set_system_proxy": false,
+  "speed_test": "allow"
 }
 ```
 
@@ -42,3 +43,7 @@ No authentication required if empty.
     To work on Android and Apple platforms without privileges, use tun.platform.http_proxy instead.
 
 Automatically set system proxy configuration when start and clean up when stop.
+
+#### speed_test
+
+See [Private Speed Test](/configuration/shared/private-speedtest/) for details.

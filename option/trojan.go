@@ -8,6 +8,7 @@ type TrojanInboundOptions struct {
 	FallbackForALPN map[string]*ServerOptions `json:"fallback_for_alpn,omitempty"`
 	Multiplex       *InboundMultiplexOptions  `json:"multiplex,omitempty"`
 	Transport       *V2RayTransportOptions    `json:"transport,omitempty"`
+	InboundSpeedTestOptions
 }
 
 type TrojanUser struct {

@@ -14,7 +14,8 @@
       "username": "admin",
       "password": "admin"
     }
-  ]
+  ],
+  "speed_test": "allow"
 }
 ```
 
@@ -29,3 +30,7 @@ See [Listen Fields](/configuration/shared/listen/) for details.
 SOCKS users.
 
 No authentication required if empty.
+
+#### speed_test
+
+See [Private Speed Test](/configuration/shared/private-speedtest/) for details.

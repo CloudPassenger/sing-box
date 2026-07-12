@@ -25,7 +25,8 @@
     }
   },
   "multiplex": {},
-  "transport": {}
+  "transport": {},
+  "speed_test": "allow"
 }
 ```
 
@@ -66,3 +67,7 @@ TLS 配置，参阅 [TLS](/zh/configuration/shared/tls/#入站)。
 #### transport
 
 V2Ray 传输配置，参阅 [V2Ray 传输层](/zh/configuration/shared/v2ray-transport/)。
+
+#### speed_test
+
+参阅 [私有测速](/zh/configuration/shared/private-speedtest/)。

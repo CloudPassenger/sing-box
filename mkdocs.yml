@@ -144,6 +144,7 @@ nav:
           - V2Ray Transport: configuration/shared/v2ray-transport.md
           - UDP over TCP: configuration/shared/udp-over-tcp.md
           - UDP NAT Fields: configuration/shared/udp-nat.md
+          - Private Speed Test: configuration/shared/private-speedtest.md
           - TCP Brutal: configuration/shared/tcp-brutal.md
           - Wi-Fi State: configuration/shared/wifi-state.md
           - Neighbor Resolution: configuration/shared/neighbor.md
@@ -309,6 +310,7 @@ plugins:
             DNS01 Challenge Fields: DNS01 验证字段
             Multiplex: 多路复用
             V2Ray Transport: V2Ray 传输层
+            Private Speed Test: 私有测速
             Wi-Fi State: Wi-Fi 状态
             UDP NAT Fields: UDP NAT 字段
 
