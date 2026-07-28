@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/binary"
 	"net"
+	"sync/atomic"
 
 	"github.com/sagernet/sing/common/auth"
 	"github.com/sagernet/sing/common/buf"
@@ -20,43 +21,84 @@ type Handler interface {
 	N.UDPConnectionHandlerEx
 }
 
+type preparedUser[K comparable] struct {
+	user K
+	key  [KeyLength]byte
+}
+
+// PreparedUsers is one immutable Trojan authentication state.
+type PreparedUsers[K comparable] struct {
+	users []preparedUser[K]
+	keys  map[[KeyLength]byte]K
+}
+
 type Service[K comparable] struct {
-	users           map[K][56]byte
-	keys            map[[56]byte]K
+	state           atomic.Pointer[PreparedUsers[K]]
 	handler         Handler
 	fallbackHandler N.TCPConnectionHandlerEx
 	logger          logger.ContextLogger
 }
 
 func NewService[K comparable](handler Handler, fallbackHandler N.TCPConnectionHandlerEx, logger logger.ContextLogger) *Service[K] {
-	return &Service[K]{
-		users:           make(map[K][56]byte),
-		keys:            make(map[[56]byte]K),
+	service := &Service[K]{
 		handler:         handler,
 		fallbackHandler: fallbackHandler,
 		logger:          logger,
 	}
+	service.state.Store(&PreparedUsers[K]{
+		keys: make(map[[KeyLength]byte]K),
+	})
+	return service
 }
 
 var ErrUserExists = E.New("user already exists")
 
 func (s *Service[K]) UpdateUsers(userList []K, passwordList []string) error {
-	users := make(map[K][56]byte)
-	keys := make(map[[56]byte]K)
-	for i, user := range userList {
+	if len(userList) != len(passwordList) {
+		return E.New("user and password count mismatch")
+	}
+	users := make(map[K]struct{}, len(userList))
+	for _, user := range userList {
 		if _, loaded := users[user]; loaded {
 			return ErrUserExists
 		}
-		key := Key(passwordList[i])
-		if oldUser, loaded := keys[key]; loaded {
-			return E.Extend(ErrUserExists, "password used by ", oldUser)
+		users[user] = struct{}{}
+	}
+	prepared, err := s.PrepareUsers(userList, passwordList)
+	if err != nil {
+		return err
+	}
+	s.InstallUsers(prepared)
+	return nil
+}
+
+// PrepareUsers validates and compiles one complete immutable authentication state.
+func (s *Service[K]) PrepareUsers(userList []K, passwordList []string) (*PreparedUsers[K], error) {
+	if len(userList) != len(passwordList) {
+		return nil, E.New("user and password count mismatch")
+	}
+	users := make([]preparedUser[K], 0, len(userList))
+	keys := make(map[[KeyLength]byte]K, len(userList))
+	for index, user := range userList {
+		key := Key(passwordList[index])
+		if _, loaded := keys[key]; loaded {
+			return nil, E.Extend(ErrUserExists, "password is assigned to multiple users")
 		}
-		users[user] = key
+		users = append(users, preparedUser[K]{
+			user: user,
+			key:  key,
+		})
 		keys[key] = user
 	}
-	s.users = users
-	s.keys = keys
-	return nil
+	return &PreparedUsers[K]{
+		users: users,
+		keys:  keys,
+	}, nil
+}
+
+// InstallUsers atomically publishes a state returned by PrepareUsers.
+func (s *Service[K]) InstallUsers(users *PreparedUsers[K]) {
+	s.state.Store(users)
 }
 
 func (s *Service[K]) NewConnection(ctx context.Context, conn net.Conn, source M.Socksaddr, onClose N.CloseHandlerFunc) error {
@@ -68,7 +110,8 @@ func (s *Service[K]) NewConnection(ctx context.Context, conn net.Conn, source M.
 		return s.fallback(ctx, conn, source, key[:n], E.New("bad request size"), onClose)
 	}
 
-	if user, loaded := s.keys[key]; loaded {
+	state := s.state.Load()
+	if user, loaded := state.keys[key]; loaded {
 		ctx = auth.ContextWithUser(ctx, user)
 	} else {
 		return s.fallback(ctx, conn, source, key[:], E.New("bad request"), onClose)
