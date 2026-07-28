@@ -201,4 +201,6 @@ require (
 	zombiezen.com/go/capnproto2 v2.18.2+incompatible // indirect
 )
 
-replace github.com/sagernet/sing-vmess v0.2.9-0.20261019223527-a0c58542bd9d => github.com/CloudPassenger/sing-vmess v0.2.8-0.20261116130224-a2f6f5595983
+replace github.com/anytls/sing-anytls => github.com/CloudPassenger/sing-anytls v0.0.0-20260728161219-3dd90913bf18
+
+replace github.com/sagernet/sing-vmess v0.2.9-0.20261019223527-a0c58542bd9d => github.com/CloudPassenger/sing-vmess v0.2.8-0.20260728153648-7a5263c133f8
