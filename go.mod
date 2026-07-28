@@ -174,4 +174,4 @@ replace github.com/sagernet/sing-vmess v0.2.8-0.20250909125414-3aed155119a1 => g
 
 replace github.com/sagernet/sing-quic => github.com/CloudPassenger/sing-quic v0.0.0-20260728161809-c6b47cd7a7b9
 
-replace github.com/sagernet/sing-shadowsocks => github.com/CloudPassenger/sing-shadowsocks v0.0.0-20260728153623-9f4fad796c7d
+replace github.com/sagernet/sing-shadowsocks => github.com/CloudPassenger/sing-shadowsocks v0.0.0-20260728205229-2c0e6a3cf643

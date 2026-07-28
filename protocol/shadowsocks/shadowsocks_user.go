@@ -1,12 +1,15 @@
 package shadowsocks
 
 import (
+	"cmp"
 	"context"
+	"slices"
 	"strconv"
 
 	"github.com/sagernet/sing-box/adapter"
 	"github.com/sagernet/sing-box/common/usermanager"
 	"github.com/sagernet/sing-box/option"
+	"github.com/sagernet/sing-shadowsocks/shadowaead"
 	"github.com/sagernet/sing-shadowsocks/shadowaead_2022"
 	E "github.com/sagernet/sing/common/exceptions"
 )
@@ -18,8 +21,10 @@ const (
 )
 
 var (
-	_ usermanager.Backend[option.ShadowsocksUser]        = (*shadowsocksUserBackend)(nil)
-	_ usermanager.Fingerprinter[option.ShadowsocksUser]  = (*shadowsocksUserBackend)(nil)
+	_ usermanager.Backend[option.ShadowsocksUser]        = (*shadowsocks2022UserBackend)(nil)
+	_ usermanager.Fingerprinter[option.ShadowsocksUser]  = (*shadowsocks2022UserBackend)(nil)
+	_ usermanager.Backend[option.ShadowsocksUser]        = (*legacyShadowsocksUserBackend)(nil)
+	_ usermanager.Fingerprinter[option.ShadowsocksUser]  = (*legacyShadowsocksUserBackend)(nil)
 	_ adapter.ManagedUserManager[option.ShadowsocksUser] = (*MultiInbound)(nil)
 )
 
@@ -28,65 +33,128 @@ type unmanagedShadowsocksUser struct {
 	password string
 }
 
-type shadowsocksUserBackend struct {
-	service        *shadowaead_2022.MultiService[adapter.UserID]
-	unmanagedUsers []unmanagedShadowsocksUser
+type shadowsocksUserCandidate struct {
+	id       adapter.UserID
+	password string
 }
 
-func newShadowsocksUserBackend(
-	service *shadowaead_2022.MultiService[adapter.UserID],
-	unmanagedUsers []unmanagedShadowsocksUser,
-) *shadowsocksUserBackend {
-	return &shadowsocksUserBackend{
-		service:        service,
-		unmanagedUsers: unmanagedUsers,
-	}
-}
+type shadowsocksUserIdentity struct{}
 
-func (b *shadowsocksUserBackend) StableID(user option.ShadowsocksUser) (adapter.UserID, error) {
+func (shadowsocksUserIdentity) StableID(user option.ShadowsocksUser) (adapter.UserID, error) {
 	if user.Name == "" {
 		return "", E.New("empty Shadowsocks user name")
 	}
 	return adapter.UserID(user.Name), nil
 }
 
-func (b *shadowsocksUserBackend) FingerprintUser(user option.ShadowsocksUser) uint64 {
+func (shadowsocksUserIdentity) FingerprintUser(user option.ShadowsocksUser) uint64 {
 	fingerprint := fingerprintShadowsocksString(shadowsocksFingerprintOffset64, user.Name)
 	return fingerprintShadowsocksString(fingerprint, user.Password)
 }
 
-func (b *shadowsocksUserBackend) Prepare(
+type shadowsocks2022UserBackend struct {
+	shadowsocksUserIdentity
+	service        *shadowaead_2022.MultiService[adapter.UserID]
+	unmanagedUsers []unmanagedShadowsocksUser
+}
+
+func newShadowsocks2022UserBackend(
+	service *shadowaead_2022.MultiService[adapter.UserID],
+	unmanagedUsers []unmanagedShadowsocksUser,
+) *shadowsocks2022UserBackend {
+	return &shadowsocks2022UserBackend{
+		service:        service,
+		unmanagedUsers: unmanagedUsers,
+	}
+}
+
+func (b *shadowsocks2022UserBackend) Prepare(
 	records []usermanager.Record[option.ShadowsocksUser],
 ) (usermanager.Published, error) {
-	userCount := len(b.unmanagedUsers) + len(records)
-	userIDs := make([]adapter.UserID, 0, userCount)
-	passwords := make([]string, 0, userCount)
-	for _, user := range b.unmanagedUsers {
-		userIDs = append(userIDs, user.id)
-		passwords = append(passwords, user.password)
-	}
-	for _, record := range records {
-		userIDs = append(userIDs, record.ID)
-		passwords = append(passwords, record.Value.Password)
-	}
-
+	userIDs, passwords := mergeShadowsocksUsers(b.unmanagedUsers, records)
 	users, err := b.service.PrepareUsersWithPasswords(userIDs, passwords)
 	if err != nil {
 		return nil, E.Cause(err, "compile Shadowsocks 2022 users")
 	}
-	return &publishedShadowsocksUsers{
+	return &publishedShadowsocks2022Users{
 		service: b.service,
 		users:   users,
 	}, nil
 }
 
-type publishedShadowsocksUsers struct {
+type publishedShadowsocks2022Users struct {
 	service *shadowaead_2022.MultiService[adapter.UserID]
 	users   *shadowaead_2022.PreparedUsers[adapter.UserID]
 }
 
-func (p *publishedShadowsocksUsers) Commit() {
+func (p *publishedShadowsocks2022Users) Commit() {
 	p.service.PublishUsers(p.users)
+}
+
+type legacyShadowsocksUserBackend struct {
+	shadowsocksUserIdentity
+	service        *shadowaead.MultiService[adapter.UserID]
+	unmanagedUsers []unmanagedShadowsocksUser
+}
+
+func newLegacyShadowsocksUserBackend(
+	service *shadowaead.MultiService[adapter.UserID],
+	unmanagedUsers []unmanagedShadowsocksUser,
+) *legacyShadowsocksUserBackend {
+	return &legacyShadowsocksUserBackend{
+		service:        service,
+		unmanagedUsers: unmanagedUsers,
+	}
+}
+
+func (b *legacyShadowsocksUserBackend) Prepare(
+	records []usermanager.Record[option.ShadowsocksUser],
+) (usermanager.Published, error) {
+	userIDs, passwords := mergeShadowsocksUsers(b.unmanagedUsers, records)
+	users, err := b.service.PrepareUsersWithPasswords(userIDs, passwords)
+	if err != nil {
+		return nil, E.Cause(err, "compile legacy Shadowsocks users")
+	}
+	return &publishedLegacyShadowsocksUsers{
+		service: b.service,
+		users:   users,
+	}, nil
+}
+
+type publishedLegacyShadowsocksUsers struct {
+	service *shadowaead.MultiService[adapter.UserID]
+	users   *shadowaead.PreparedUsers[adapter.UserID]
+}
+
+func (p *publishedLegacyShadowsocksUsers) Commit() {
+	p.service.PublishUsers(p.users)
+}
+
+func mergeShadowsocksUsers(
+	unmanagedUsers []unmanagedShadowsocksUser,
+	records []usermanager.Record[option.ShadowsocksUser],
+) ([]adapter.UserID, []string) {
+	candidates := make([]shadowsocksUserCandidate, 0, len(unmanagedUsers)+len(records))
+	for _, user := range unmanagedUsers {
+		candidates = append(candidates, shadowsocksUserCandidate(user))
+	}
+	for _, record := range records {
+		candidates = append(candidates, shadowsocksUserCandidate{
+			id:       record.ID,
+			password: record.Value.Password,
+		})
+	}
+	slices.SortFunc(candidates, func(left, right shadowsocksUserCandidate) int {
+		return cmp.Compare(left.id, right.id)
+	})
+
+	userIDs := make([]adapter.UserID, len(candidates))
+	passwords := make([]string, len(candidates))
+	for index, candidate := range candidates {
+		userIDs[index] = candidate.id
+		passwords[index] = candidate.password
+	}
+	return userIDs, passwords
 }
 
 func splitShadowsocksUsers(
@@ -130,12 +198,41 @@ func fingerprintShadowsocksString(fingerprint uint64, value string) uint64 {
 	return fingerprint
 }
 
-func (h *MultiInbound) initializeUserManager(ctx context.Context, users []option.ShadowsocksUser) error {
+func (h *MultiInbound) initialize2022UserManager(
+	ctx context.Context,
+	service *shadowaead_2022.MultiService[adapter.UserID],
+	users []option.ShadowsocksUser,
+) error {
 	managedUsers, unmanagedUsers, unmanagedUserLabels := splitShadowsocksUsers(users)
-	manager := usermanager.New[option.ShadowsocksUser](
-		newShadowsocksUserBackend(h.managedService, unmanagedUsers),
-		usermanager.Options{},
+	return h.initializeUserManager(
+		ctx,
+		managedUsers,
+		unmanagedUserLabels,
+		newShadowsocks2022UserBackend(service, unmanagedUsers),
 	)
+}
+
+func (h *MultiInbound) initializeLegacyUserManager(
+	ctx context.Context,
+	service *shadowaead.MultiService[adapter.UserID],
+	users []option.ShadowsocksUser,
+) error {
+	managedUsers, unmanagedUsers, unmanagedUserLabels := splitShadowsocksUsers(users)
+	return h.initializeUserManager(
+		ctx,
+		managedUsers,
+		unmanagedUserLabels,
+		newLegacyShadowsocksUserBackend(service, unmanagedUsers),
+	)
+}
+
+func (h *MultiInbound) initializeUserManager(
+	ctx context.Context,
+	managedUsers []option.ShadowsocksUser,
+	unmanagedUserLabels map[adapter.UserID]string,
+	backend usermanager.Backend[option.ShadowsocksUser],
+) error {
+	manager := usermanager.New[option.ShadowsocksUser](backend, usermanager.Options{})
 	if _, err := manager.ReplaceUsers(ctx, 0, "", "", managedUsers); err != nil {
 		return E.Cause(err, "initialize Shadowsocks managed users")
 	}

@@ -6,8 +6,8 @@ github.com/CloudPassenger/sing-anytls v0.0.0-20260728161219-3dd90913bf18 h1:99D9
 github.com/CloudPassenger/sing-anytls v0.0.0-20260728161219-3dd90913bf18/go.mod h1:7rjN6IukwysmdusYsrV51Fgu1uW6vsrdd6ctjnEAln8=
 github.com/CloudPassenger/sing-quic v0.0.0-20260728161809-c6b47cd7a7b9 h1:oJA/EwzUv0D2DKlJgXTJXf9cU7mBVyakrd1Hkarqz78=
 github.com/CloudPassenger/sing-quic v0.0.0-20260728161809-c6b47cd7a7b9/go.mod h1:K5bWvITOm4vE10fwLfrWpw27bCoVJ+tfQ79tOWg+Ko8=
-github.com/CloudPassenger/sing-shadowsocks v0.0.0-20260728153623-9f4fad796c7d h1:rOqAavSD4t/0YsMlbhHq71C/t/aZVA2PR4iISmJ+kd0=
-github.com/CloudPassenger/sing-shadowsocks v0.0.0-20260728153623-9f4fad796c7d/go.mod h1:lo7TWEMDcN5/h5B8S0ew+r78ZODn6SwVaFhvB6H+PTI=
+github.com/CloudPassenger/sing-shadowsocks v0.0.0-20260728205229-2c0e6a3cf643 h1:GFEkthwNhEwnUIwXI8fRGPcHvzHh9bpuntlwejFchlc=
+github.com/CloudPassenger/sing-shadowsocks v0.0.0-20260728205229-2c0e6a3cf643/go.mod h1:lo7TWEMDcN5/h5B8S0ew+r78ZODn6SwVaFhvB6H+PTI=
 github.com/CloudPassenger/sing-vmess v0.2.8-0.20260728153648-7a5263c133f8 h1:lnVQ3tNyd40pNsQEY24uMjj9b2Us4i3MrtZehRkX5dk=
 github.com/CloudPassenger/sing-vmess v0.2.8-0.20260728153648-7a5263c133f8/go.mod h1:ZeRYl1GULgvP4GWhqW/W1v0OoD8+iukQReyTNcFdiA8=
 github.com/ajg/form v1.5.1 h1:t9c7v8JUKu/XxOGBU0yjNpaMloxGEJhUkqFRq0ibGeU=
