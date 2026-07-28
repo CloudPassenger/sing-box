@@ -42,12 +42,13 @@ type MultiInbound struct {
 	logger              logger.ContextLogger
 	listener            *listener.Listener
 	service             shadowsocks.MultiService[adapter.UserID]
-	managedService      *shadowaead_2022.MultiService[adapter.UserID]
 	userManager         *usermanager.Manager[option.ShadowsocksUser]
 	unmanagedUserLabels map[adapter.UserID]string
 	tracker             adapter.SSMTracker
 }
 
+// legacyMultiInbound deliberately withholds managed-user and SSM capabilities from the unchanged
+// single configured-user legacy path.
 type legacyMultiInbound MultiInbound
 
 func newMultiInbound(
@@ -60,13 +61,7 @@ func newMultiInbound(
 	managedMethod := options.Method == "2022-blake3-aes-128-gcm" ||
 		options.Method == "2022-blake3-aes-256-gcm"
 	legacyMethod := common.Contains(shadowaead.List, options.Method)
-	if legacyMethod && (options.Managed || len(options.Users) > 1) {
-		return nil, E.New(
-			"legacy Shadowsocks multi-user is unsupported for method \"",
-			options.Method,
-			"\"; configure a single user or migrate to 2022-blake3-aes-128-gcm or 2022-blake3-aes-256-gcm",
-		)
-	}
+	legacyManaged := legacyMethod && (options.Managed || len(options.Users) > 1)
 	if common.Contains(shadowaead_2022.List, options.Method) && !managedMethod {
 		return nil, E.New(
 			"Shadowsocks 2022 multi-user is unsupported for method \"",
@@ -118,8 +113,37 @@ func newMultiInbound(
 			return nil, serviceErr
 		}
 		multiInbound.service = service
-		multiInbound.managedService = service
-		if err := multiInbound.initializeUserManager(ctx, options.Users); err != nil {
+		if err := multiInbound.initialize2022UserManager(ctx, service, options.Users); err != nil {
+			return nil, err
+		}
+		multiInbound.listener = listener.New(listener.Options{
+			Context:                  ctx,
+			Logger:                   logger,
+			Network:                  options.Network.Build(),
+			Listen:                   options.ListenOptions,
+			ConnectionHandler:        multiInbound,
+			PacketHandler:            multiInbound,
+			ThreadUnsafePacketWriter: true,
+		})
+		return multiInbound, nil
+	}
+
+	if legacyManaged {
+		service, serviceErr := shadowaead.NewMultiService[adapter.UserID](
+			options.Method,
+			int64(udpTimeout.Seconds()),
+			adapter.NewUpstreamHandler(
+				adapter.InboundContext{},
+				multiInbound.newConnection,
+				multiInbound.newPacketConnection,
+				multiInbound,
+			),
+		)
+		if serviceErr != nil {
+			return nil, serviceErr
+		}
+		multiInbound.service = service
+		if err := multiInbound.initializeLegacyUserManager(ctx, service, options.Users); err != nil {
 			return nil, err
 		}
 		multiInbound.listener = listener.New(listener.Options{
