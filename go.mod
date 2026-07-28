@@ -168,4 +168,6 @@ require (
 	lukechampine.com/blake3 v1.4.1 // indirect
 )
 
+replace github.com/anytls/sing-anytls => github.com/CloudPassenger/sing-anytls v0.0.0-20260728161219-3dd90913bf18
+
 replace github.com/sagernet/sing-vmess v0.2.8-0.20250909125414-3aed155119a1 => github.com/CloudPassenger/sing-vmess v0.0.0-20260409002451-b6c88ce449d0
