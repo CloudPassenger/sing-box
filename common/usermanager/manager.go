@@ -86,12 +86,25 @@ func (m *Manager[T]) ApplyUsers(
 	defer m.updateMutex.Unlock()
 
 	previousGeneration := adapter.UserGeneration(m.generation.Load())
-	if err := validateExpectedGeneration(transaction.ExpectedGeneration, previousGeneration); err != nil {
-		return adapter.UserTransactionResult{}, err
-	}
 	var fingerprint uint64
 	if transaction.RequestID != "" {
-		fingerprint = fingerprintOperations(transaction.Operations, m.fingerprinter)
+		fingerprint = fingerprintOperations(
+			transaction.ExpectedGeneration,
+			transaction.Operations,
+			m.fingerprinter,
+		)
+		if cached, loaded := m.replay.get(transaction.RequestID); loaded {
+			return m.resolveReplay(
+				cached,
+				transaction.RequestID,
+				fingerprint,
+				previousGeneration,
+				transactionCarriesValues(transaction.Operations, nil),
+			)
+		}
+	}
+	if err := validateExpectedGeneration(transaction.ExpectedGeneration, previousGeneration); err != nil {
+		return adapter.UserTransactionResult{}, err
 	}
 	return m.applyUsersLocked(
 		transaction,
@@ -117,10 +130,35 @@ func (m *Manager[T]) ReplaceUsers(
 	defer m.updateMutex.Unlock()
 
 	previousGeneration := adapter.UserGeneration(m.generation.Load())
+	var replacement *replacementState[T]
+	var fingerprint uint64
+	if requestID != "" {
+		if cached, loaded := m.replay.get(requestID); loaded {
+			var err error
+			replacement, err = m.prepareReplacement(users)
+			if err != nil {
+				return adapter.UserTransactionResult{}, err
+			}
+			fingerprint = fingerprintReplacement(
+				expectedGeneration,
+				replacement.orderedIDs,
+				replacement.users,
+				m.fingerprinter,
+			)
+			return m.resolveReplay(
+				cached,
+				requestID,
+				fingerprint,
+				previousGeneration,
+				transactionCarriesValues(nil, replacement),
+			)
+		}
+	}
 	if err := validateExpectedGeneration(expectedGeneration, previousGeneration); err != nil {
 		return adapter.UserTransactionResult{}, err
 	}
-	replacement, err := m.prepareReplacement(users)
+	var err error
+	replacement, err = m.prepareReplacement(users)
 	if err != nil {
 		return adapter.UserTransactionResult{}, err
 	}
@@ -129,9 +167,13 @@ func (m *Manager[T]) ReplaceUsers(
 		RequestID:          requestID,
 		SourceRevision:     sourceRevision,
 	}
-	var fingerprint uint64
 	if requestID != "" {
-		fingerprint = fingerprintReplacement(replacement.orderedIDs, replacement.users, m.fingerprinter)
+		fingerprint = fingerprintReplacement(
+			expectedGeneration,
+			replacement.orderedIDs,
+			replacement.users,
+			m.fingerprinter,
+		)
 	}
 	return m.applyUsersLocked(
 		transaction,
@@ -157,46 +199,49 @@ func validateExpectedGeneration(
 	)
 }
 
+func (m *Manager[T]) resolveReplay(
+	cached replayEntry,
+	requestID string,
+	fingerprint uint64,
+	currentGeneration adapter.UserGeneration,
+	carriesValues bool,
+) (adapter.UserTransactionResult, error) {
+	if m.fingerprinter == nil && carriesValues {
+		return adapter.UserTransactionResult{}, E.Cause(
+			ErrRequestIDConflict,
+			"request ID ",
+			requestID,
+			": backend does not implement Fingerprinter, so value-carrying replay cannot be proven identical",
+		)
+	}
+	if cached.fingerprint != fingerprint {
+		return adapter.UserTransactionResult{}, E.Cause(
+			ErrRequestIDConflict,
+			"request ID ",
+			requestID,
+		)
+	}
+	if cached.result.Generation != currentGeneration {
+		return adapter.UserTransactionResult{}, E.Cause(
+			ErrRequestIDConflict,
+			"request ID ",
+			requestID,
+			": canonical state advanced since the original commit from generation ",
+			uint64(cached.result.Generation),
+			" to ",
+			uint64(currentGeneration),
+		)
+	}
+	cached.result.Replayed = true
+	return cached.result, nil
+}
+
 func (m *Manager[T]) applyUsersLocked(
 	transaction adapter.UserTransaction[T],
 	previousGeneration adapter.UserGeneration,
 	fingerprint uint64,
 	replacement *replacementState[T],
 ) (adapter.UserTransactionResult, error) {
-	if transaction.RequestID != "" {
-		cached, loaded := m.replay.get(transaction.RequestID)
-		if loaded {
-			if m.fingerprinter == nil && transactionCarriesValues(transaction.Operations, replacement) {
-				return adapter.UserTransactionResult{}, E.Cause(
-					ErrRequestIDConflict,
-					"request ID ",
-					transaction.RequestID,
-					": backend does not implement Fingerprinter, so value-carrying replay cannot be proven identical",
-				)
-			}
-			if cached.fingerprint != fingerprint {
-				return adapter.UserTransactionResult{}, E.Cause(
-					ErrRequestIDConflict,
-					"request ID ",
-					transaction.RequestID,
-				)
-			}
-			if cached.result.Generation != previousGeneration {
-				return adapter.UserTransactionResult{}, E.Cause(
-					ErrRequestIDConflict,
-					"request ID ",
-					transaction.RequestID,
-					": canonical state advanced since the original commit from generation ",
-					uint64(cached.result.Generation),
-					" to ",
-					uint64(previousGeneration),
-				)
-			}
-			cached.result.Replayed = true
-			return cached.result, nil
-		}
-	}
-
 	if replacement != nil {
 		transaction.Operations = m.replacementOperations(replacement)
 	}

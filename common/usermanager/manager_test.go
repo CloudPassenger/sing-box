@@ -704,18 +704,20 @@ func TestManagerRequestIDReplayReturnsOriginalResultAndRunsHooksOnce(t *testing.
 	t.Parallel()
 	backend := newFakeBackend()
 	manager := New[testUser](backend, Options{})
+	seedTestUsers(t, manager, testUser{ID: "a", Credential: "password-old"})
 	var hookCalls atomic.Int32
 	manager.AddPostCommitHook(func(adapter.UserTransactionResult) {
 		hookCalls.Add(1)
 	})
 	transaction := adapter.UserTransaction[testUser]{
-		RequestID:      "request-1",
-		SourceRevision: "revision-1",
+		ExpectedGeneration: manager.Generation(),
+		RequestID:          "request-1",
+		SourceRevision:     "revision-1",
 		Operations: []adapter.UserOperation[testUser]{
 			{
-				Type:  adapter.UserOperationAdd,
+				Type:  adapter.UserOperationUpdate,
 				ID:    "a",
-				Value: testUser{ID: "a", Credential: "password-a"},
+				Value: testUser{ID: "a", Credential: "password-new"},
 			},
 		},
 	}
@@ -730,12 +732,54 @@ func TestManagerRequestIDReplayReturnsOriginalResultAndRunsHooksOnce(t *testing.
 	require.Equal(t, expectedReplay, second)
 	require.False(t, first.Replayed)
 	require.Equal(t, int32(1), hookCalls.Load())
-	require.Equal(t, adapter.UserGeneration(1), manager.Generation())
+	require.Equal(t, adapter.UserGeneration(2), manager.Generation())
 	snapshot := backend.snapshot()
-	require.Equal(t, 1, snapshot.PrepareCalls)
-	require.Equal(t, 1, snapshot.CommitCalls)
+	require.Equal(t, 2, snapshot.PrepareCalls)
+	require.Equal(t, 2, snapshot.CommitCalls)
 	requireManagerState(t, manager, backend, testRecords(
-		testUser{ID: "a", Credential: "password-a"},
+		testUser{ID: "a", Credential: "password-new"},
+	))
+}
+
+func TestManagerReplaceReplayPrecedesStaleGenerationAndRunsHooksOnce(t *testing.T) {
+	t.Parallel()
+	backend := newFakeBackend()
+	manager := New[testUser](backend, Options{})
+	seedTestUsers(t, manager, testUser{ID: "a", Credential: "password-old"})
+	var hookCalls atomic.Int32
+	manager.AddPostCommitHook(func(adapter.UserTransactionResult) {
+		hookCalls.Add(1)
+	})
+	expectedGeneration := manager.Generation()
+	desired := []testUser{{ID: "a", Credential: "password-new"}}
+
+	first, err := manager.ReplaceUsers(
+		context.Background(),
+		expectedGeneration,
+		"replace-request-1",
+		"revision-1",
+		desired,
+	)
+	require.NoError(t, err)
+	second, err := manager.ReplaceUsers(
+		context.Background(),
+		expectedGeneration,
+		"replace-request-1",
+		"revision-1",
+		desired,
+	)
+	require.NoError(t, err)
+
+	expectedReplay := first
+	expectedReplay.Replayed = true
+	require.Equal(t, expectedReplay, second)
+	require.Equal(t, int32(1), hookCalls.Load())
+	require.Equal(t, adapter.UserGeneration(2), manager.Generation())
+	snapshot := backend.snapshot()
+	require.Equal(t, 2, snapshot.PrepareCalls)
+	require.Equal(t, 2, snapshot.CommitCalls)
+	requireManagerState(t, manager, backend, testRecords(
+		testUser{ID: "a", Credential: "password-new"},
 	))
 }
 
@@ -1746,7 +1790,7 @@ func TestManagerRejectsEmptyReplacementReplayAfterCanonicalStateAdvances(t *test
 	))
 }
 
-func TestManagerRejectsExactStaleReplayBeforeCacheLookup(t *testing.T) {
+func TestManagerRejectsExactReplayAfterCanonicalStateAdvances(t *testing.T) {
 	t.Parallel()
 	backend := newFakeBackend()
 	manager := New[testUser](backend, Options{})
@@ -1775,7 +1819,7 @@ func TestManagerRejectsExactStaleReplayBeforeCacheLookup(t *testing.T) {
 	beforeBackend := backend.snapshot()
 
 	_, err = manager.ApplyUsers(context.Background(), revoke)
-	require.ErrorIs(t, err, ErrGenerationConflict)
+	require.ErrorIs(t, err, ErrRequestIDConflict)
 	require.Equal(t, adapter.UserGeneration(3), manager.Generation())
 	require.Equal(t, beforeBackend, backend.snapshot())
 	requireManagerState(t, manager, backend, testRecords(
@@ -1783,7 +1827,7 @@ func TestManagerRejectsExactStaleReplayBeforeCacheLookup(t *testing.T) {
 	))
 }
 
-func TestManagerChecksGenerationBeforeCachedReplay(t *testing.T) {
+func TestManagerRejectsCachedReplayWhenExpectedGenerationChanges(t *testing.T) {
 	t.Parallel()
 	backend := newFakeBackend()
 	manager := New[testUser](backend, Options{})
@@ -1805,8 +1849,39 @@ func TestManagerChecksGenerationBeforeCachedReplay(t *testing.T) {
 	transaction.ExpectedGeneration = 12345
 
 	_, err = manager.ApplyUsers(context.Background(), transaction)
-	require.ErrorIs(t, err, ErrGenerationConflict)
-	require.Equal(t, beforeFingerprintCalls, backend.fingerprintCalls.Load())
+	require.ErrorIs(t, err, ErrRequestIDConflict)
+	require.Equal(t, beforeFingerprintCalls+1, backend.fingerprintCalls.Load())
+	require.Equal(t, adapter.UserGeneration(1), manager.Generation())
+	require.Equal(t, beforeBackend, backend.snapshot())
+	requireManagerState(t, manager, backend, testRecords(
+		testUser{ID: "alice", Credential: "credential-alice"},
+	))
+}
+
+func TestManagerRejectsReplaceReplayWhenExpectedGenerationChanges(t *testing.T) {
+	t.Parallel()
+	backend := newFakeBackend()
+	manager := New[testUser](backend, Options{})
+	desired := []testUser{{ID: "alice", Credential: "credential-alice"}}
+
+	_, err := manager.ReplaceUsers(
+		context.Background(),
+		0,
+		"cached-replace",
+		"revision-1",
+		desired,
+	)
+	require.NoError(t, err)
+	beforeBackend := backend.snapshot()
+
+	_, err = manager.ReplaceUsers(
+		context.Background(),
+		12345,
+		"cached-replace",
+		"revision-1",
+		desired,
+	)
+	require.ErrorIs(t, err, ErrRequestIDConflict)
 	require.Equal(t, adapter.UserGeneration(1), manager.Generation())
 	require.Equal(t, beforeBackend, backend.snapshot())
 	requireManagerState(t, manager, backend, testRecords(

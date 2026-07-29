@@ -83,6 +83,7 @@ func (c *replayCache) put(requestID string, fingerprint uint64, result adapter.U
 }
 
 func fingerprintOperations[T any](
+	expectedGeneration adapter.UserGeneration,
 	operations []adapter.UserOperation[T],
 	fingerprinter Fingerprinter[T],
 ) uint64 {
@@ -93,7 +94,10 @@ func fingerprintOperations[T any](
 			return cmp.Compare(left.ID, right.ID)
 		},
 	)
-	fingerprint := fingerprintByte(fingerprintOffset64, fingerprintDomainTransaction)
+	fingerprint := fingerprintUint64(
+		fingerprintByte(fingerprintOffset64, fingerprintDomainTransaction),
+		uint64(expectedGeneration),
+	)
 	for _, operation := range orderedOperations {
 		fingerprint = fingerprintByte(fingerprint, byte(operation.Type))
 		fingerprint = fingerprintID(fingerprint, operation.ID)
@@ -111,13 +115,17 @@ func fingerprintOperations[T any](
 }
 
 func fingerprintReplacement[T any](
+	expectedGeneration adapter.UserGeneration,
 	ids []adapter.UserID,
 	users map[adapter.UserID]T,
 	fingerprinter Fingerprinter[T],
 ) uint64 {
 	orderedIDs := slices.Clone(ids)
 	slices.Sort(orderedIDs)
-	fingerprint := fingerprintByte(fingerprintOffset64, fingerprintDomainReplacement)
+	fingerprint := fingerprintUint64(
+		fingerprintByte(fingerprintOffset64, fingerprintDomainReplacement),
+		uint64(expectedGeneration),
+	)
 	for _, id := range orderedIDs {
 		fingerprint = fingerprintByte(fingerprint, byte(adapter.UserOperationUpdate))
 		fingerprint = fingerprintID(fingerprint, id)

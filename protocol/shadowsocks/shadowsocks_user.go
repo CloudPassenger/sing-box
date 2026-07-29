@@ -5,6 +5,8 @@ import (
 	"context"
 	"slices"
 	"strconv"
+	"strings"
+	"sync"
 
 	"github.com/sagernet/sing-box/adapter"
 	"github.com/sagernet/sing-box/common/usermanager"
@@ -18,6 +20,7 @@ const (
 	shadowsocksFingerprintOffset64 uint64 = 14695981039346656037
 	shadowsocksFingerprintPrime64  uint64 = 1099511628211
 	shadowsocksStaticUserIDPrefix         = "\x00sing-box:shadowsocks:static:"
+	shadowsocksSSMUserIDPrefix            = "\x00sing-box:shadowsocks:ssm:"
 )
 
 var (
@@ -36,6 +39,12 @@ type unmanagedShadowsocksUser struct {
 type shadowsocksUserCandidate struct {
 	id       adapter.UserID
 	password string
+}
+
+type shadowsocksUserState struct {
+	access  sync.Mutex
+	managed map[adapter.UserID]option.ShadowsocksUser
+	ssm     map[string]string
 }
 
 type shadowsocksUserIdentity struct{}
@@ -237,6 +246,7 @@ func (h *MultiInbound) initializeUserManager(
 		return E.Cause(err, "initialize Shadowsocks managed users")
 	}
 	h.userManager = manager
+	h.userState = newShadowsocksUserState(managedUsers)
 	h.unmanagedUserLabels = unmanagedUserLabels
 	return nil
 }
@@ -249,7 +259,27 @@ func (h *MultiInbound) ApplyUsers(
 	ctx context.Context,
 	transaction adapter.UserTransaction[option.ShadowsocksUser],
 ) (adapter.UserTransactionResult, error) {
-	return h.userManager.ApplyUsers(ctx, transaction)
+	if err := validateManagedShadowsocksTransaction(transaction); err != nil {
+		return adapter.UserTransactionResult{}, err
+	}
+	h.userState.access.Lock()
+	defer h.userState.access.Unlock()
+
+	result, err := h.userManager.ApplyUsers(ctx, transaction)
+	if err != nil {
+		return adapter.UserTransactionResult{}, err
+	}
+	if !result.Replayed {
+		for _, operation := range transaction.Operations {
+			switch operation.Type {
+			case adapter.UserOperationAdd, adapter.UserOperationUpdate:
+				h.userState.managed[operation.ID] = operation.Value
+			case adapter.UserOperationDelete:
+				delete(h.userState.managed, operation.ID)
+			}
+		}
+	}
+	return externalShadowsocksResult(result), nil
 }
 
 func (h *MultiInbound) ReplaceUsers(
@@ -259,11 +289,134 @@ func (h *MultiInbound) ReplaceUsers(
 	sourceRevision string,
 	users []option.ShadowsocksUser,
 ) (adapter.UserTransactionResult, error) {
-	return h.userManager.ReplaceUsers(
+	for _, user := range users {
+		if err := validateManagedShadowsocksUserID(adapter.UserID(user.Name)); err != nil {
+			return adapter.UserTransactionResult{}, err
+		}
+	}
+	h.userState.access.Lock()
+	defer h.userState.access.Unlock()
+
+	canonicalUsers := appendShadowsocksSSMUsers(slices.Clone(users), h.userState.ssm)
+	result, err := h.userManager.ReplaceUsers(
 		ctx,
 		expectedGeneration,
 		requestID,
 		sourceRevision,
-		users,
+		canonicalUsers,
 	)
+	if err != nil {
+		return adapter.UserTransactionResult{}, err
+	}
+	if !result.Replayed {
+		h.userState.managed = shadowsocksUsersByID(users)
+	}
+	return externalShadowsocksResult(result), nil
+}
+
+func newShadowsocksUserState(users []option.ShadowsocksUser) *shadowsocksUserState {
+	return &shadowsocksUserState{
+		managed: shadowsocksUsersByID(users),
+		ssm:     make(map[string]string),
+	}
+}
+
+func shadowsocksUsersByID(users []option.ShadowsocksUser) map[adapter.UserID]option.ShadowsocksUser {
+	usersByID := make(map[adapter.UserID]option.ShadowsocksUser, len(users))
+	for _, user := range users {
+		usersByID[adapter.UserID(user.Name)] = user
+	}
+	return usersByID
+}
+
+func validateManagedShadowsocksTransaction(
+	transaction adapter.UserTransaction[option.ShadowsocksUser],
+) error {
+	for _, operation := range transaction.Operations {
+		if err := validateManagedShadowsocksUserID(operation.ID); err != nil {
+			return err
+		}
+		switch operation.Type {
+		case adapter.UserOperationAdd, adapter.UserOperationUpdate:
+			if err := validateManagedShadowsocksUserID(adapter.UserID(operation.Value.Name)); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func validateManagedShadowsocksUserID(userID adapter.UserID) error {
+	if strings.HasPrefix(string(userID), shadowsocksSSMUserIDPrefix) {
+		return E.Cause(
+			usermanager.ErrInvalidTransaction,
+			"Shadowsocks user ID uses the reserved SSM namespace",
+		)
+	}
+	return nil
+}
+
+func (h *MultiInbound) replaceSSMUsers(users []string, passwords []string) error {
+	if len(users) != len(passwords) {
+		return E.New("Shadowsocks SSM user and password list length mismatch")
+	}
+	desired := make(map[string]string, len(users))
+	for index, user := range users {
+		if user == "" {
+			return E.New("empty Shadowsocks SSM user name")
+		}
+		if _, loaded := desired[user]; loaded {
+			return E.New("duplicate Shadowsocks SSM user name")
+		}
+		desired[user] = passwords[index]
+	}
+
+	h.userState.access.Lock()
+	defer h.userState.access.Unlock()
+	canonicalUsers := make([]option.ShadowsocksUser, 0, len(h.userState.managed)+len(desired))
+	for _, user := range h.userState.managed {
+		canonicalUsers = append(canonicalUsers, user)
+	}
+	canonicalUsers = appendShadowsocksSSMUsers(canonicalUsers, desired)
+	if _, err := h.userManager.ReplaceUsers(h.ctx, 0, "", "", canonicalUsers); err != nil {
+		return err
+	}
+	h.userState.ssm = desired
+	return nil
+}
+
+func appendShadowsocksSSMUsers(
+	users []option.ShadowsocksUser,
+	ssmUsers map[string]string,
+) []option.ShadowsocksUser {
+	for user, password := range ssmUsers {
+		users = append(users, option.ShadowsocksUser{
+			Name:     shadowsocksSSMUserIDPrefix + user,
+			Password: password,
+		})
+	}
+	return users
+}
+
+func externalShadowsocksResult(result adapter.UserTransactionResult) adapter.UserTransactionResult {
+	result.Added = externalShadowsocksUserIDs(result.Added)
+	result.Updated = externalShadowsocksUserIDs(result.Updated)
+	result.Deleted = externalShadowsocksUserIDs(result.Deleted)
+	return result
+}
+
+func externalShadowsocksUserIDs(userIDs []adapter.UserID) []adapter.UserID {
+	return slices.DeleteFunc(slices.Clone(userIDs), func(userID adapter.UserID) bool {
+		return strings.HasPrefix(string(userID), shadowsocksSSMUserIDPrefix)
+	})
+}
+
+func (h *MultiInbound) resolveUserID(userID adapter.UserID) (string, bool) {
+	if unmanagedLabel, unmanaged := h.unmanagedUserLabels[userID]; unmanaged {
+		return unmanagedLabel, false
+	}
+	if user, ssmUser := strings.CutPrefix(string(userID), shadowsocksSSMUserIDPrefix); ssmUser {
+		return user, true
+	}
+	return string(userID), true
 }

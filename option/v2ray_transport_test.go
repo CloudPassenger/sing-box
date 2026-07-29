@@ -4,6 +4,10 @@ import (
 	"testing"
 
 	Xbadoption "github.com/sagernet/sing-box/common/xray/json/badoption"
+	C "github.com/sagernet/sing-box/constant"
+	"github.com/sagernet/sing/common/json"
+
+	"github.com/stretchr/testify/require"
 )
 
 // TestXHTTPGetNormalizedPathConditionalSlash is a regression test for
@@ -241,4 +245,30 @@ func TestXHTTPGetNormalizedUplinkChunkSize(t *testing.T) {
 			t.Errorf("fixed chunk size = %+v, want {4096 4096}", got)
 		}
 	})
+}
+
+func TestV2RayWebSocketRequestHostJSONRoundTrip(t *testing.T) {
+	t.Parallel()
+
+	transport := V2RayTransportOptions{
+		Type: C.V2RayTransportTypeWebsocket,
+		WebsocketOptions: V2RayWebsocketOptions{
+			RequestHost: "front.example",
+			Path:        "/ws",
+		},
+	}
+	content, err := json.Marshal(transport)
+	require.NoError(t, err)
+	require.JSONEq(t, `{"type":"ws","request_host":"front.example","path":"/ws"}`, string(content))
+
+	var decoded V2RayTransportOptions
+	require.NoError(t, json.Unmarshal(content, &decoded))
+	require.Equal(t, C.V2RayTransportTypeWebsocket, decoded.Type)
+	require.Equal(t, "front.example", decoded.WebsocketOptions.RequestHost)
+	require.Equal(t, "/ws", decoded.WebsocketOptions.Path)
+
+	transport.WebsocketOptions.RequestHost = ""
+	content, err = json.Marshal(transport)
+	require.NoError(t, err)
+	require.JSONEq(t, `{"type":"ws","path":"/ws"}`, string(content))
 }
