@@ -144,7 +144,7 @@ func (c *Client) DialContext(ctx context.Context) (net.Conn, error) {
 	var closed atomic.Int32
 	reader, writer := io.Pipe()
 	conn := splitConn{
-		writer: writer,
+		writer: newDeadlineWriteCloser(&pipeInterruptWriter{PipeWriter: writer}),
 		onClose: func() {
 			if closed.Add(1) > 1 {
 				return
@@ -198,10 +198,10 @@ func (c *Client) DialContext(ctx context.Context) (net.Conn, error) {
 	// uploadWriter wrapper, exact size limits can be enforced
 	// uploadPipeReader, uploadPipeWriter := pipe.New(pipe.WithSizeLimit(maxUploadSize - 1))
 	uploadPipeReader, uploadPipeWriter := pipe.New(pipe.WithSizeLimit(max(0, maxUploadSize-buf.Size)))
-	conn.writer = uploadWriter{
-		uploadPipeWriter,
-		maxUploadSize,
-	}
+	conn.writer = newDeadlineWriteCloser(&uploadWriter{
+		Writer: uploadPipeWriter,
+		maxLen: maxUploadSize,
+	})
 	go func() {
 		var seq int64
 		var lastWrite time.Time

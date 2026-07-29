@@ -43,12 +43,13 @@ type MultiInbound struct {
 	listener            *listener.Listener
 	service             shadowsocks.MultiService[adapter.UserID]
 	userManager         *usermanager.Manager[option.ShadowsocksUser]
+	userState           *shadowsocksUserState
 	unmanagedUserLabels map[adapter.UserID]string
 	tracker             adapter.SSMTracker
 }
 
 // legacyMultiInbound deliberately withholds managed-user and SSM capabilities from the unchanged
-// single configured-user legacy path.
+// single unnamed configured-user legacy path.
 type legacyMultiInbound MultiInbound
 
 func newMultiInbound(
@@ -61,7 +62,8 @@ func newMultiInbound(
 	managedMethod := options.Method == "2022-blake3-aes-128-gcm" ||
 		options.Method == "2022-blake3-aes-256-gcm"
 	legacyMethod := common.Contains(shadowaead.List, options.Method)
-	legacyManaged := legacyMethod && (options.Managed || len(options.Users) > 1)
+	legacyManaged := legacyMethod && (options.Managed || len(options.Users) > 1 ||
+		(len(options.Users) == 1 && options.Users[0].Name != ""))
 	if common.Contains(shadowaead_2022.List, options.Method) && !managedMethod {
 		return nil, E.New(
 			"Shadowsocks 2022 multi-user is unsupported for method \"",
@@ -210,9 +212,7 @@ func (h *MultiInbound) SetTracker(tracker adapter.SSMTracker) {
 }
 
 func (h *MultiInbound) UpdateUsers(users []string, uPSKs []string) error {
-	return h.service.UpdateUsersWithPasswords(common.Map(users, func(user string) adapter.UserID {
-		return adapter.UserID(user)
-	}), uPSKs)
+	return h.replaceSSMUsers(users, uPSKs)
 }
 
 //nolint:staticcheck
@@ -241,10 +241,8 @@ func (h *MultiInbound) newConnection(ctx context.Context, conn net.Conn, metadat
 	if !loaded {
 		return os.ErrInvalid
 	}
-	user := string(userID)
-	if unmanagedLabel, unmanaged := h.unmanagedUserLabels[userID]; unmanaged {
-		user = unmanagedLabel
-	} else {
+	user, managed := h.resolveUserID(userID)
+	if managed {
 		metadata.User = user
 	}
 	h.logger.InfoContext(ctx, "[", user, "] inbound connection to ", metadata.Destination)
@@ -264,10 +262,8 @@ func (h *MultiInbound) newPacketConnection(ctx context.Context, conn N.PacketCon
 	if !loaded {
 		return os.ErrInvalid
 	}
-	user := string(userID)
-	if unmanagedLabel, unmanaged := h.unmanagedUserLabels[userID]; unmanaged {
-		user = unmanagedLabel
-	} else {
+	user, managed := h.resolveUserID(userID)
+	if managed {
 		metadata.User = user
 	}
 	ctx = log.ContextWithNewID(ctx)
