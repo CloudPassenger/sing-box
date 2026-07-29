@@ -806,11 +806,7 @@ func TestShadowsocksManagedUsersUDPSessionDeletionBehavior(t *testing.T) {
 				},
 			})
 			require.NoError(t, err)
-			if profile.legacy {
-				requireShadowsocksUDPExchangeRejected(t, udpConn, "alice-udp-existing-after-delete")
-			} else {
-				require.NoError(t, echoShadowsocksUDP(udpConn, "alice-udp-existing-after-delete"))
-			}
+			requireShadowsocksUDPExchangeRejected(t, udpConn, "alice-udp-existing-after-delete")
 			_ = udpConn.Close()
 			harness.requireUDPRejected(t, profile.newClient(t, harness, aliceCredential))
 
@@ -971,6 +967,159 @@ func TestShadowsocksManagedSSMUpdateUsersCompatibility(t *testing.T) {
 	}
 }
 
+func TestShadowsocksManagedAndSSMNamespacesShareCanonicalState(t *testing.T) {
+	t.Parallel()
+	for _, profile := range shadowsocksManagedTestProfiles() {
+		t.Run(profile.name, func(t *testing.T) {
+			t.Parallel()
+			apiOld := profile.credential(0x61)
+			apiNew := profile.credential(0x62)
+			ssmOld := profile.credential(0x63)
+			ssmNew := profile.credential(0x64)
+			harness := newShadowsocksTestHarness(t, profile.options([]option.ShadowsocksUser{
+				{Name: "api-user", Password: apiOld.password},
+			}, false))
+			managed, loaded := harness.inbound.(adapter.ManagedUserManager[option.ShadowsocksUser])
+			require.True(t, loaded)
+			managedSSM, loaded := harness.inbound.(adapter.ManagedSSMServer)
+			require.True(t, loaded)
+
+			generationBeforeReservedID := managed.Generation()
+			reservedID := adapter.UserID(shadowsocksSSMUserIDPrefix + "forged")
+			_, err := managed.ApplyUsers(harness.ctx, adapter.UserTransaction[option.ShadowsocksUser]{
+				ExpectedGeneration: generationBeforeReservedID,
+				Operations: []adapter.UserOperation[option.ShadowsocksUser]{
+					{
+						Type: adapter.UserOperationAdd,
+						ID:   reservedID,
+						Value: option.ShadowsocksUser{
+							Name:     string(reservedID),
+							Password: profile.credential(0x65).password,
+						},
+					},
+				},
+			})
+			require.ErrorIs(t, err, usermanager.ErrInvalidTransaction)
+			require.Equal(t, generationBeforeReservedID, managed.Generation())
+
+			require.NoError(t, managedSSM.UpdateUsers(
+				[]string{"ssm-user"},
+				[]string{ssmOld.password},
+			))
+			apiConn, err := harness.openTCP(profile.newClient(t, harness, apiOld), "api-after-ssm-add")
+			require.NoError(t, err)
+			harness.requireTCPUser(t, "api-user")
+			_ = apiConn.Close()
+			ssmConn, err := harness.openTCP(profile.newClient(t, harness, ssmOld), "ssm-after-add")
+			require.NoError(t, err)
+			harness.requireTCPUser(t, "ssm-user")
+			_ = ssmConn.Close()
+
+			require.NoError(t, managedSSM.UpdateUsers(
+				[]string{"ssm-user"},
+				[]string{ssmNew.password},
+			))
+			harness.requireTCPRejected(t, profile.newClient(t, harness, ssmOld))
+			apiConn, err = harness.openTCP(profile.newClient(t, harness, apiOld), "api-after-ssm-rotation")
+			require.NoError(t, err)
+			harness.requireTCPUser(t, "api-user")
+			_ = apiConn.Close()
+
+			_, err = managed.ApplyUsers(harness.ctx, adapter.UserTransaction[option.ShadowsocksUser]{
+				ExpectedGeneration: managed.Generation(),
+				Operations: []adapter.UserOperation[option.ShadowsocksUser]{
+					{
+						Type: adapter.UserOperationUpdate,
+						ID:   "api-user",
+						Value: option.ShadowsocksUser{
+							Name:     "api-user",
+							Password: apiNew.password,
+						},
+					},
+				},
+			})
+			require.NoError(t, err)
+			harness.requireTCPRejected(t, profile.newClient(t, harness, apiOld))
+			ssmConn, err = harness.openTCP(profile.newClient(t, harness, ssmNew), "ssm-after-api-rotation")
+			require.NoError(t, err)
+			harness.requireTCPUser(t, "ssm-user")
+			_ = ssmConn.Close()
+
+			require.NoError(t, managedSSM.UpdateUsers(nil, nil))
+			harness.requireTCPRejected(t, profile.newClient(t, harness, ssmNew))
+			apiConn, err = harness.openTCP(profile.newClient(t, harness, apiNew), "api-after-ssm-delete")
+			require.NoError(t, err)
+			harness.requireTCPUser(t, "api-user")
+			_ = apiConn.Close()
+		})
+	}
+}
+
+func TestShadowsocksManagedAndSSMConcurrentUpdatesPreserveNamespaces(t *testing.T) {
+	t.Parallel()
+	for _, profile := range shadowsocksManagedTestProfiles() {
+		t.Run(profile.name, func(t *testing.T) {
+			t.Parallel()
+			apiOld := profile.credential(0x71)
+			apiNew := profile.credential(0x72)
+			ssmCredential := profile.credential(0x73)
+			harness := newShadowsocksTestHarness(t, profile.options([]option.ShadowsocksUser{
+				{Name: "api-user", Password: apiOld.password},
+			}, false))
+			managed, loaded := harness.inbound.(adapter.ManagedUserManager[option.ShadowsocksUser])
+			require.True(t, loaded)
+			managedSSM, loaded := harness.inbound.(adapter.ManagedSSMServer)
+			require.True(t, loaded)
+
+			start := make(chan struct{})
+			errors := make(chan error, 2)
+			var group sync.WaitGroup
+			group.Add(2)
+			go func() {
+				defer group.Done()
+				<-start
+				_, err := managed.ApplyUsers(harness.ctx, adapter.UserTransaction[option.ShadowsocksUser]{
+					Operations: []adapter.UserOperation[option.ShadowsocksUser]{
+						{
+							Type: adapter.UserOperationUpdate,
+							ID:   "api-user",
+							Value: option.ShadowsocksUser{
+								Name:     "api-user",
+								Password: apiNew.password,
+							},
+						},
+					},
+				})
+				errors <- err
+			}()
+			go func() {
+				defer group.Done()
+				<-start
+				errors <- managedSSM.UpdateUsers(
+					[]string{"ssm-user"},
+					[]string{ssmCredential.password},
+				)
+			}()
+			close(start)
+			group.Wait()
+			close(errors)
+			for err := range errors {
+				require.NoError(t, err)
+			}
+			require.Equal(t, adapter.UserGeneration(3), managed.Generation())
+
+			apiConn, err := harness.openTCP(profile.newClient(t, harness, apiNew), "api-after-concurrent-update")
+			require.NoError(t, err)
+			harness.requireTCPUser(t, "api-user")
+			_ = apiConn.Close()
+			ssmConn, err := harness.openTCP(profile.newClient(t, harness, ssmCredential), "ssm-after-concurrent-update")
+			require.NoError(t, err)
+			harness.requireTCPUser(t, "ssm-user")
+			_ = ssmConn.Close()
+		})
+	}
+}
+
 func TestShadowsocksLegacyMultiUserDecision(t *testing.T) {
 	t.Parallel()
 	for _, profile := range shadowsocksLegacyManagedTestProfiles() {
@@ -1022,18 +1171,19 @@ func TestShadowsocksLegacyMultiUserDecision(t *testing.T) {
 				_ = baseUDPConn.Close()
 			})
 
-			t.Run("single configured user remains legacy static", func(t *testing.T) {
+			t.Run("single named user exposes managed capability", func(t *testing.T) {
 				t.Parallel()
 				credential := profile.credential(0x53)
 				harness := newShadowsocksTestHarness(t, profile.options([]option.ShadowsocksUser{
 					{Name: "legacy", Password: credential.password},
 				}, false))
-				_, legacyInbound := harness.inbound.(*legacyMultiInbound)
-				require.True(t, legacyInbound)
-				_, managed := harness.inbound.(adapter.ManagedUserManager[option.ShadowsocksUser])
-				require.False(t, managed)
+				_, multiInbound := harness.inbound.(*MultiInbound)
+				require.True(t, multiInbound)
+				managed, loaded := harness.inbound.(adapter.ManagedUserManager[option.ShadowsocksUser])
+				require.True(t, loaded)
+				require.Equal(t, adapter.UserGeneration(1), managed.Generation())
 				_, managedSSM := harness.inbound.(adapter.ManagedSSMServer)
-				require.False(t, managedSSM)
+				require.True(t, managedSSM)
 
 				conn, err := harness.openTCP(
 					profile.newClient(t, harness, credential),
