@@ -35,7 +35,15 @@ const (
 	RuleActionTypeHijackDNS    = "hijack-dns"
 	RuleActionTypeSniff        = "sniff"
 	RuleActionTypeResolve      = "resolve"
+	RuleActionTypeLimitOptions = "limit-options"
 	RuleActionTypePredefined   = "predefined"
+)
+
+const (
+	LimitScopeSourceIP = "source_ip"
+	LimitScopeUser     = "user"
+	LimitScopeInbound  = "inbound"
+	LimitScopeRule     = "rule"
 )
 
 const (
