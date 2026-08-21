@@ -22,6 +22,7 @@ icon: material/new-box
     }
   ],
   "obfs_mode": "",
+  "managed": false,
   "speed_test": "allow"
 }
 ```
@@ -44,6 +45,7 @@ icon: material/new-box
     }
   ],
   "mode": "",
+  "managed": false,
   "speed_test": "allow"
 }
 ```
@@ -96,6 +98,15 @@ HTTP obfuscation mode, one of `none` `http`.
 Traffic shaping mode, one of `default` `unshaped` `unsafe-raw`.
 
 `default` is used by default.
+
+#### managed
+
+Enable the managed user API for this inbound.
+
+The multi-user service authenticates only from its user list and has no
+top-level `psk` fallback, so this option is required to accept managed users
+when no static `users` entry exists. At least one user, static or managed, must
+remain configured.
 
 #### speed_test
 
