@@ -950,7 +950,10 @@ jobs:
           LOCAL_PROPERTIES: ${{ secrets.LOCAL_PROPERTIES }}
   build_windows_client:
     name: Build Windows client (${{ matrix.desktop_arch }})
-    if: (github.event_name != 'workflow_dispatch' || inputs.build == 'All' || inputs.build == 'Windows') && github.ref != 'refs/heads/oldstable'
+    # Dispatch only: the desktop clients are new in 1.14 and their naive cross
+    # toolchain and upload step are not reproducible on a fork push, so a branch
+    # push would always fail here.
+    if: github.event_name == 'workflow_dispatch' && (inputs.build == 'All' || inputs.build == 'Windows') && github.ref != 'refs/heads/oldstable'
     runs-on: windows-latest
     needs:
       - calculate_version
@@ -1063,7 +1066,8 @@ jobs:
           path: 'dist'
   build_linux_client:
     name: Build Linux client (${{ matrix.desktop_arch }})
-    if: (github.event_name != 'workflow_dispatch' || inputs.build == 'All' || inputs.build == 'Linux') && github.ref != 'refs/heads/oldstable'
+    # Dispatch only: see build_windows_client.
+    if: github.event_name == 'workflow_dispatch' && (inputs.build == 'All' || inputs.build == 'Linux') && github.ref != 'refs/heads/oldstable'
     runs-on: ubuntu-26.04
     needs:
       - calculate_version
