@@ -21,7 +21,8 @@ icon: material/new-box
       "userkey": "user-password"
     }
   ],
-  "obfs_mode": ""
+  "obfs_mode": "",
+  "speed_test": "allow"
 }
 ```
 
@@ -42,7 +43,8 @@ icon: material/new-box
       "userkey": "user-password"
     }
   ],
-  "mode": ""
+  "mode": "",
+  "speed_test": "allow"
 }
 ```
 
@@ -94,3 +96,7 @@ HTTP obfuscation mode, one of `none` `http`.
 Traffic shaping mode, one of `default` `unshaped` `unsafe-raw`.
 
 `default` is used by default.
+
+#### speed_test
+
+See [Private Speed Test](/configuration/shared/private-speedtest/) for details.
