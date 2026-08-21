@@ -15,7 +15,8 @@
       "password": "admin"
     }
   ],
-  "set_system_proxy": false
+  "set_system_proxy": false,
+  "speed_test": "allow"
 }
 ```
 
@@ -42,3 +43,7 @@ SOCKS 和 HTTP 用户
     要在无特权的 Android 和 iOS 上工作，请改用 tun.platform.http_proxy。
 
 启动时自动设置系统代理，停止时自动清理。
+
+#### speed_test
+
+参阅 [私有测速](/zh/configuration/shared/private-speedtest/)。

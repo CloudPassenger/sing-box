@@ -31,7 +31,8 @@ icon: material/alert-decagram
   "ignore_client_bandwidth": false,
   "tls": {},
   "masquerade": "", // 或 {}
-  "brutal_debug": false
+  "brutal_debug": false,
+  "speed_test": "allow"
 }
 ```
 
@@ -141,3 +142,7 @@ HTTP3 服务器认证失败时的行为 （对象配置）。
 #### brutal_debug
 
 启用 Hysteria Brutal CC 的调试信息日志记录。
+
+#### speed_test
+
+参阅 [私有测速](/zh/configuration/shared/private-speedtest/)。

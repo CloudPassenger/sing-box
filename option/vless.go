@@ -7,6 +7,7 @@ type VLESSInboundOptions struct {
 	Multiplex  *InboundMultiplexOptions `json:"multiplex,omitempty"`
 	Transport  *V2RayTransportOptions   `json:"transport,omitempty"`
 	Decryption string                   `json:"decryption,omitempty"`
+	InboundSpeedTestOptions
 }
 
 type VLESSUser struct {
