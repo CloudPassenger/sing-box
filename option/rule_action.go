@@ -474,6 +474,7 @@ func routeActionUnion(builder schema.Builder) (*schema.Node, error) {
 		{action: C.RuleActionTypeHijackDNS},
 		{action: C.RuleActionTypeSniff, structType: reflect.TypeFor[RouteActionSniff]()},
 		{action: C.RuleActionTypeResolve, structType: reflect.TypeFor[RouteActionResolve]()},
+		{action: C.RuleActionTypeLimitOptions, structType: reflect.TypeFor[_LimitActionOptions]()},
 	})
 }
 
