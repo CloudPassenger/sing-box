@@ -102,8 +102,10 @@ func Copy(reader Reader, writer Writer, options ...CopyOption) error {
 	for _, option := range options {
 		option(&handler)
 	}
+	// copyInternal loops until it returns a readError or a writeError, so its
+	// result is never nil; only the EOF case is treated as success.
 	err := copyInternal(reader, writer, &handler)
-	if err != nil && errors.Cause(err) != io.EOF {
+	if errors.Cause(err) != io.EOF {
 		return err
 	}
 	return nil
