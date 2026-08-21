@@ -85,11 +85,9 @@ func TestUploadQueueConcurrentPushClose(t *testing.T) {
 				_ = q.Push(Packet{Payload: []byte("x"), Seq: seq})
 			}(uint64(i))
 		}
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			_ = q.Close()
-		}()
+		})
 		allDone := make(chan struct{})
 		go func() {
 			wg.Wait()

@@ -45,9 +45,5 @@ func New(opts ...Option) (*Reader, *Writer) {
 		opt(&p.option)
 	}
 
-	return &Reader{
-			pipe: p,
-		}, &Writer{
-			pipe: p,
-		}
+	return &Reader{pipe: p}, &Writer{pipe: p}
 }
