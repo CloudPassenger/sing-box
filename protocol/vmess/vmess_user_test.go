@@ -144,7 +144,7 @@ func newHandshakeTestHarness(t *testing.T, staticUsers []option.VMessUser) *hand
 		logger:  logger.NOP(),
 	}
 	service := vmessService.NewService[adapter.UserID](
-		adapter.NewUpstreamContextHandlerEx(inbound.newConnectionEx, inbound.newPacketConnectionEx),
+		adapter.NewUpstreamContextHandler(inbound.newConnectionEx, inbound.newPacketConnectionEx),
 	)
 	inbound.service = service
 	require.NoError(t, inbound.initializeUserManager(ctx, staticUsers))

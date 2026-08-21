@@ -110,7 +110,7 @@ func newHandshakeTestHarness(t *testing.T, staticUsers []option.TrojanUser) *han
 		logger:  logger.NOP(),
 	}
 	service := trojanTransport.NewService[adapter.UserID](
-		adapter.NewUpstreamContextHandlerEx(inbound.newConnection, inbound.newPacketConnection),
+		adapter.NewUpstreamContextHandler(inbound.newConnection, inbound.newPacketConnection),
 		nil,
 		logger.NOP(),
 	)
