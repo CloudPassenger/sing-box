@@ -21,7 +21,8 @@ icon: material/new-box
       "userkey": "user-password"
     }
   ],
-  "obfs_mode": ""
+  "obfs_mode": "",
+  "speed_test": "allow"
 }
 ```
 
@@ -42,7 +43,8 @@ icon: material/new-box
       "userkey": "user-password"
     }
   ],
-  "mode": ""
+  "mode": "",
+  "speed_test": "allow"
 }
 ```
 
@@ -94,3 +96,7 @@ HTTP 混淆模式，`none` `http` 之一。
 流量整形模式，`default` `unshaped` `unsafe-raw` 之一。
 
 默认为 `default`。
+
+#### speed_test
+
+参阅 [私有测速](/zh/configuration/shared/private-speedtest/)。
