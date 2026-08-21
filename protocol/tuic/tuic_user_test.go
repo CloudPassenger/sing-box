@@ -690,9 +690,7 @@ func TestTUICConcurrentAuthenticationAndUpdates(t *testing.T) {
 	errorsChannel := make(chan error, workerCount+1)
 	var waitGroup sync.WaitGroup
 
-	waitGroup.Add(1)
-	go func() {
-		defer waitGroup.Done()
+	waitGroup.Go(func() {
 		<-start
 		for index := range 12 {
 			password := "bob-password-a"
@@ -718,7 +716,7 @@ func TestTUICConcurrentAuthenticationAndUpdates(t *testing.T) {
 				return
 			}
 		}
-	}()
+	})
 
 	for worker := range workerCount {
 		waitGroup.Add(1)

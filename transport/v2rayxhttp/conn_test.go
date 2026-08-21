@@ -198,12 +198,10 @@ func TestDeadlineWriteCloserConcurrentResetAndClose(t *testing.T) {
 		}(index%2 == 0)
 	}
 	closeResult := make(chan error, 1)
-	waitGroup.Add(1)
-	go func() {
-		defer waitGroup.Done()
+	waitGroup.Go(func() {
 		<-start
 		closeResult <- wrapper.Close()
-	}()
+	})
 	close(start)
 	waitGroup.Wait()
 	close(setResults)
@@ -259,12 +257,10 @@ func TestSplitConnConcurrentCloseOnceJoinsErrors(t *testing.T) {
 	results := make(chan error, closerCount)
 	var waitGroup sync.WaitGroup
 	for range closerCount {
-		waitGroup.Add(1)
-		go func() {
-			defer waitGroup.Done()
+		waitGroup.Go(func() {
 			<-start
 			results <- conn.Close()
-		}()
+		})
 	}
 	close(start)
 	waitGroup.Wait()

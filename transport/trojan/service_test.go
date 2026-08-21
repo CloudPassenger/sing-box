@@ -149,9 +149,7 @@ func TestServiceConcurrentAuthenticationAndUpdate(t *testing.T) {
 	start := make(chan struct{})
 	errors := make(chan error, authCount+1)
 	var group sync.WaitGroup
-	group.Add(1)
-	go func() {
-		defer group.Done()
+	group.Go(func() {
 		<-start
 		for index := range iterations {
 			var err error
@@ -171,11 +169,9 @@ func TestServiceConcurrentAuthenticationAndUpdate(t *testing.T) {
 				return
 			}
 		}
-	}()
+	})
 	for reader := range readerCount {
-		group.Add(1)
-		go func() {
-			defer group.Done()
+		group.Go(func() {
 			<-start
 			for index := range iterations {
 				password := "password-a"
@@ -187,7 +183,7 @@ func TestServiceConcurrentAuthenticationAndUpdate(t *testing.T) {
 					return
 				}
 			}
-		}()
+		})
 	}
 	close(start)
 	group.Wait()

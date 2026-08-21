@@ -149,12 +149,10 @@ func (h *vlessHandshakeTestHarness) acceptConnections() {
 		if err != nil {
 			return
 		}
-		h.connectionGroup.Add(1)
-		go func() {
-			defer h.connectionGroup.Done()
+		h.connectionGroup.Go(func() {
 			defer conn.Close()
 			h.inbound.NewConnection(h.ctx, conn, adapter.InboundContext{}, nil)
-		}()
+		})
 	}
 }
 
@@ -505,9 +503,7 @@ func TestVLESSManagedUsersConcurrentFlowAndIdentityPublication(t *testing.T) {
 	stop := make(chan struct{})
 	updateErrors := make(chan error, 1)
 	var updateGroup sync.WaitGroup
-	updateGroup.Add(1)
-	go func() {
-		defer updateGroup.Done()
+	updateGroup.Go(func() {
 		users := []option.VLESSUser{visionUser}
 		for {
 			select {
@@ -533,7 +529,7 @@ func TestVLESSManagedUsersConcurrentFlowAndIdentityPublication(t *testing.T) {
 			}
 			time.Sleep(25 * time.Microsecond)
 		}
-	}()
+	})
 
 	var stopOnce sync.Once
 	stopUpdates := func() {
