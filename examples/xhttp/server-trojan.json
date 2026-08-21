@@ -1,0 +1,44 @@
+{
+  "log": {
+    "level": "info"
+  },
+  "inbounds": [
+    {
+      "type": "trojan",
+      "tag": "trojan-in",
+      "listen": "127.0.0.1",
+      "listen_port": 24445,
+      "users": [
+        {
+          "name": "xhttp-test",
+          "password": "test-password"
+        }
+      ],
+      "tls": {
+        "enabled": true,
+        "server_name": "localhost",
+        "alpn": [
+          "h2"
+        ],
+        "certificate_path": "examples/xhttp/cert.pem",
+        "key_path": "examples/xhttp/key.pem"
+      },
+      "transport": {
+        "type": "xhttp",
+        "mode": "stream-up",
+        "host": "localhost",
+        "path": "/xhttp",
+        "x_padding_bytes": "64-256"
+      }
+    }
+  ],
+  "outbounds": [
+    {
+      "type": "direct",
+      "tag": "direct"
+    }
+  ],
+  "route": {
+    "final": "direct"
+  }
+}
