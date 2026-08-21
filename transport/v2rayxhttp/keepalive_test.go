@@ -12,6 +12,7 @@ import (
 // validated (placed in a header/cookie/query instead of Referer), keepalive
 // must still be allowed to start.
 func TestStreamUpKeepaliveEnabled(t *testing.T) {
+	t.Parallel()
 	withReferer := httptest.NewRequest(http.MethodPost, "/", nil)
 	withReferer.Header.Set("Referer", "https://example.com/?x_padding=abc")
 
@@ -32,6 +33,7 @@ func TestStreamUpKeepaliveEnabled(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			if got := streamUpKeepaliveEnabled(tc.request, tc.obfsMode, tc.obfsPaddingAccepted); got != tc.want {
 				t.Errorf("streamUpKeepaliveEnabled() = %v, want %v", got, tc.want)
 			}

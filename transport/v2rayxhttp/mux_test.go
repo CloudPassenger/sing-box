@@ -19,12 +19,13 @@ func (f *fakeXmuxConn) Close() error {
 }
 
 func TestMaxConnections(t *testing.T) {
+	t.Parallel()
 	xmuxOptions := option.V2RayXHTTPXmuxOptions{
 		MaxConnections: badoptionRange(4, 4),
 	}
 	m := NewXmuxManager(xmuxOptions, func() XmuxConn { return &fakeXmuxConn{} })
 	seen := make(map[*XmuxClient]struct{})
-	for i := 0; i < 8; i++ {
+	for range 8 {
 		seen[m.GetXmuxClient(context.Background())] = struct{}{}
 	}
 	if len(seen) != 4 {
@@ -33,12 +34,13 @@ func TestMaxConnections(t *testing.T) {
 }
 
 func TestMaxConcurrency(t *testing.T) {
+	t.Parallel()
 	xmuxOptions := option.V2RayXHTTPXmuxOptions{
 		MaxConcurrency: badoptionRange(2, 2),
 	}
 	m := NewXmuxManager(xmuxOptions, func() XmuxConn { return &fakeXmuxConn{} })
 	seen := make(map[*XmuxClient]struct{})
-	for i := 0; i < 64; i++ {
+	for range 64 {
 		c := m.GetXmuxClient(context.Background())
 		c.AddRunning()
 		seen[c] = struct{}{}
@@ -55,6 +57,7 @@ func TestMaxConcurrency(t *testing.T) {
 // until every running request finishes (DoneRunning). Closing it
 // immediately on eviction would cut off in-flight streams.
 func TestEvictionDoesNotCloseActiveStream(t *testing.T) {
+	t.Parallel()
 	conn := &fakeXmuxConn{}
 	m := NewXmuxManager(option.V2RayXHTTPXmuxOptions{
 		MaxConnections: badoptionRange(1, 1),
@@ -81,6 +84,7 @@ func TestEvictionDoesNotCloseActiveStream(t *testing.T) {
 // TestEvictionClosesIdleClientImmediately: a client with no running
 // requests at eviction time closes right away.
 func TestEvictionClosesIdleClientImmediately(t *testing.T) {
+	t.Parallel()
 	conn := &fakeXmuxConn{}
 	m := NewXmuxManager(option.V2RayXHTTPXmuxOptions{
 		MaxConnections: badoptionRange(1, 1),
