@@ -154,12 +154,10 @@ func (h *handshakeTestHarness) acceptConnections(service *anytls.Service) {
 		if err != nil {
 			return
 		}
-		h.connectionGroup.Add(1)
-		go func() {
-			defer h.connectionGroup.Done()
+		h.connectionGroup.Go(func() {
 			defer conn.Close()
 			_ = service.NewConnection(h.ctx, conn, M.Socksaddr{}, nil)
-		}()
+		})
 	}
 }
 

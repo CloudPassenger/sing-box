@@ -187,16 +187,14 @@ func (h *shadowsocksTestHarness) acceptConnections() {
 		if err != nil {
 			return
 		}
-		h.connectionGroup.Add(1)
-		go func() {
-			defer h.connectionGroup.Done()
+		h.connectionGroup.Go(func() {
 			defer conn.Close()
 			_ = h.service.NewConnection(
 				h.ctx,
 				conn,
 				M.Metadata{Source: M.SocksaddrFromNet(conn.RemoteAddr()).Unwrap()},
 			)
-		}()
+		})
 	}
 }
 
@@ -839,9 +837,7 @@ func TestShadowsocksManagedUsersConcurrentTCPAndUDPUpdates(t *testing.T) {
 			start := make(chan struct{})
 			errors := make(chan error, 1)
 			var group sync.WaitGroup
-			group.Add(1)
-			go func() {
-				defer group.Done()
+			group.Go(func() {
 				<-start
 				for iteration := range 150 {
 					aliceCredential, bobCredential := credentialA, credentialB
@@ -876,7 +872,7 @@ func TestShadowsocksManagedUsersConcurrentTCPAndUDPUpdates(t *testing.T) {
 						return
 					}
 				}
-			}()
+			})
 			for worker := range 4 {
 				group.Add(1)
 				go func(useUDP bool, client ss.Method) {

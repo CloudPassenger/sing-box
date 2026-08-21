@@ -72,7 +72,7 @@ func (b *userBackend) Prepare(records []usermanager.Record[option.SnellUser]) (u
 			return fmt.Errorf("empty Snell user key for %s", owner)
 		}
 		if len(key) > 255 {
-			return fmt.Errorf("Snell user key too long for %s", owner)
+			return fmt.Errorf("snell user key too long for %s", owner)
 		}
 		if previousOwner, loaded := keyOwners[string(key)]; loaded {
 			return fmt.Errorf("duplicate Snell user key for %s and %s", previousOwner, owner)
@@ -99,7 +99,7 @@ func (b *userBackend) Prepare(records []usermanager.Record[option.SnellUser]) (u
 	// empty generation, so refuse it here instead of publishing a server that
 	// accepts nobody.
 	if len(users) == 0 {
-		return nil, errors.New("Snell managed users must keep at least one user; the multi-user service has no top-level PSK fallback")
+		return nil, errors.New("snell managed users must keep at least one user; the multi-user service has no top-level PSK fallback")
 	}
 
 	return &publishedUsers{

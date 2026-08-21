@@ -140,12 +140,10 @@ func (h *handshakeTestHarness) acceptConnections() {
 		if err != nil {
 			return
 		}
-		h.connectionGroup.Add(1)
-		go func() {
-			defer h.connectionGroup.Done()
+		h.connectionGroup.Go(func() {
 			defer conn.Close()
 			_ = h.inbound.service.NewConnection(h.ctx, conn, M.Socksaddr{}, nil)
-		}()
+		})
 	}
 }
 

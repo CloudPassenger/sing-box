@@ -75,7 +75,7 @@ func TestSnellUserBackendIdentityAndValidation(t *testing.T) {
 		{ID: "alice", Value: option.SnellUser{Name: "alice", UserKey: strings.Repeat("k", 256)}},
 	})
 	require.Nil(t, published)
-	require.ErrorContains(t, err, "Snell user key too long")
+	require.ErrorContains(t, err, "snell user key too long")
 }
 
 func TestSnellUserBackendRefusesEmptyGeneration(t *testing.T) {
