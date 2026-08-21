@@ -8,6 +8,7 @@ import (
 // TestTrustedForwardedAddrsNoXFF: no X-Forwarded-For header at all -> no
 // addresses, no warning, nothing forged.
 func TestTrustedForwardedAddrsNoXFF(t *testing.T) {
+	t.Parallel()
 	h := http.Header{}
 	addrs, warn, forged := trustedForwardedAddrs(h, nil)
 	if addrs != nil || warn || forged {
@@ -20,6 +21,7 @@ func TestTrustedForwardedAddrsNoXFF(t *testing.T) {
 // X-Forwarded-For must NOT be trusted (no addrs), and must be surfaced as a
 // warning rather than silently accepted.
 func TestTrustedForwardedAddrsUntrustedByDefault(t *testing.T) {
+	t.Parallel()
 	h := http.Header{}
 	h.Set("X-Forwarded-For", "203.0.113.9")
 	addrs, warn, forged := trustedForwardedAddrs(h, nil)
@@ -38,6 +40,7 @@ func TestTrustedForwardedAddrsUntrustedByDefault(t *testing.T) {
 // configured, but this request doesn't carry any of them alongside
 // X-Forwarded-For -> treat as a potential forgery, do not trust the value.
 func TestTrustedForwardedAddrsMissingMarkerIsForged(t *testing.T) {
+	t.Parallel()
 	h := http.Header{}
 	h.Set("X-Forwarded-For", "203.0.113.9")
 	addrs, warn, forged := trustedForwardedAddrs(h, []string{"X-Trusted-CDN"})
@@ -55,6 +58,7 @@ func TestTrustedForwardedAddrsMissingMarkerIsForged(t *testing.T) {
 // TestTrustedForwardedAddrsTrusted: the trusted marker is present -> the
 // forwarded address is honored.
 func TestTrustedForwardedAddrsTrusted(t *testing.T) {
+	t.Parallel()
 	h := http.Header{}
 	h.Set("X-Forwarded-For", "203.0.113.9")
 	h.Set("X-Trusted-CDN", "1")
