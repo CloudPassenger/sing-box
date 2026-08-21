@@ -3,6 +3,7 @@ package option
 import (
 	"crypto/tls"
 	"encoding/json"
+	"reflect"
 	"strings"
 
 	"github.com/sagernet/sing-box/schema"
@@ -258,6 +259,18 @@ func (l *InboundRealityFallbackLimit) UnmarshalJSON(data []byte) error {
 		}
 	}
 	return nil
+}
+
+// DescribeSchema is required because the custom UnmarshalJSON above only adds
+// validation: without it the 1.14 schema generator rejects this type as an
+// unmapped custom JSON type and `sing-box schema` fails outright.
+func (l InboundRealityFallbackLimit) DescribeSchema(builder schema.Builder) (*schema.Node, error) {
+	node := schema.StrictObject()
+	err := builder.FlattenStruct(node, reflect.TypeFor[_InboundRealityFallbackLimit]())
+	if err != nil {
+		return nil, err
+	}
+	return node, nil
 }
 
 type InboundRealityHandshakeOptions struct {
