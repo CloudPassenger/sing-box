@@ -71,6 +71,7 @@ func (f *recordingDialerClient) total() (sum int64, count int) {
 // scMaxEachPostBytes strictly (e.g. behind nginx's small header/body
 // buffers) would reject the oversized POST.
 func TestPacketUpStrictChunking(t *testing.T) {
+	t.Parallel()
 	const maxUploadSize = 64
 	const payloadSize = 500 // not a multiple of maxUploadSize on purpose
 
@@ -148,6 +149,7 @@ func TestPacketUpStrictChunking(t *testing.T) {
 // (AddRunning'd) at dial time, leaking the original client's running count
 // and corrupting the rotated-to client's count.
 func TestPacketUpRotationNeverTouchesOuterXmuxClient(t *testing.T) {
+	t.Parallel()
 	clientA := &fakePacketDialerClient{}
 	clientB := &fakePacketDialerClient{}
 	xmuxA := &XmuxClient{XmuxConn: clientA}

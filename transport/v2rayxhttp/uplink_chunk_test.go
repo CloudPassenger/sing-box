@@ -31,6 +31,7 @@ func (rt *capturingRoundTripper) RoundTrip(req *http.Request) (*http.Response, e
 // every chunk. It also verifies the chunks reassemble to the exact original
 // payload.
 func TestPostPacketHeaderChunkingUsesRandomizedSize(t *testing.T) {
+	t.Parallel()
 	rt := &capturingRoundTripper{}
 	c := &DefaultDialerClient{
 		options: &option.V2RayXHTTPBaseOptions{

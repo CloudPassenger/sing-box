@@ -18,6 +18,7 @@ import (
 // simultaneously and concatenate it in that order, without depending on the
 // removed *-Length marker header (Xray-core #5720 item 4).
 func TestServeHTTPAutoUplinkPlacementConcatenates(t *testing.T) {
+	t.Parallel()
 	opts := &option.V2RayXHTTPOptions{
 		Mode: "packet-up",
 		V2RayXHTTPBaseOptions: option.V2RayXHTTPBaseOptions{

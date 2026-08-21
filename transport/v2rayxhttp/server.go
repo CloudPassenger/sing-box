@@ -468,7 +468,6 @@ func ExtractMetaFromRequest(options *option.V2RayXHTTPOptions, req *http.Request
 	case option.PlacementPath:
 		if len(subpath) > pathPart {
 			seqStr = subpath[pathPart]
-			pathPart += 1
 		}
 	case option.PlacementQuery:
 		seqStr = req.URL.Query().Get(seqKey)

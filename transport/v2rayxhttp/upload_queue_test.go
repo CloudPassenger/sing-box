@@ -10,6 +10,7 @@ import (
 )
 
 func TestUploadQueueRegressionReadZero(t *testing.T) {
+	t.Parallel()
 	q := NewUploadQueue(10)
 	err := q.Push(Packet{
 		Payload: []byte("x"),
@@ -32,6 +33,7 @@ func TestUploadQueueRegressionReadZero(t *testing.T) {
 // Xray-core #6372: Push blocking on a full channel must never prevent Close
 // from completing.
 func TestUploadQueuePushFullThenClose(t *testing.T) {
+	t.Parallel()
 	q := NewUploadQueue(1)
 	if err := q.Push(Packet{Payload: []byte("a"), Seq: 0}); err != nil {
 		t.Fatal(err)
@@ -72,6 +74,7 @@ func TestUploadQueuePushFullThenClose(t *testing.T) {
 // calls with go test -race to catch ordering/visibility bugs in the reader
 // hand-off (extended's intermediate mutex-based fix left a race here).
 func TestUploadQueueConcurrentPushClose(t *testing.T) {
+	t.Parallel()
 	for range 50 {
 		q := NewUploadQueue(4)
 		var wg sync.WaitGroup
@@ -105,6 +108,7 @@ func TestUploadQueueConcurrentPushClose(t *testing.T) {
 // that a second Push after the reader is set is rejected instead of
 // silently accepted.
 func TestUploadQueueCloseClosesInjectedReader(t *testing.T) {
+	t.Parallel()
 	q := NewUploadQueue(4)
 	sc := &httpServerConn{
 		Instance:       done.New(),
@@ -127,6 +131,7 @@ func TestUploadQueueCloseClosesInjectedReader(t *testing.T) {
 // TestUploadQueueReadDuringClose ensures a Read() blocked waiting for
 // packets returns promptly once Close() runs concurrently.
 func TestUploadQueueReadDuringClose(t *testing.T) {
+	t.Parallel()
 	q := NewUploadQueue(4)
 	readDone := make(chan struct{})
 	go func() {

@@ -14,11 +14,12 @@ import (
 // falling back to a UUID (whose fixed "xxxxxxxx-xxxx-..." shape is itself a
 // detectable pattern some CDNs/WAFs block on).
 func TestGenerateSessionIDCustomTable(t *testing.T) {
+	t.Parallel()
 	opts := &option.V2RayXHTTPBaseOptions{
 		SessionIDTable:  "0123456789abcdef",
 		SessionIDLength: Xbadoption.Range{From: 20, To: 20},
 	}
-	for i := 0; i < 20; i++ {
+	for range 20 {
 		id := GenerateSessionID(opts)
 		if len(id) != 20 {
 			t.Fatalf("len(id) = %d, want 20 (id=%q)", len(id), id)
@@ -32,6 +33,7 @@ func TestGenerateSessionIDCustomTable(t *testing.T) {
 // TestGenerateSessionIDFallsBackToUUID verifies the default (no table
 // configured) behavior is unchanged: a standard UUID string.
 func TestGenerateSessionIDFallsBackToUUID(t *testing.T) {
+	t.Parallel()
 	opts := &option.V2RayXHTTPBaseOptions{}
 	id := GenerateSessionID(opts)
 	if len(id) != 36 || strings.Count(id, "-") != 4 {

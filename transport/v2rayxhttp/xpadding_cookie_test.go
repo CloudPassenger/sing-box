@@ -17,6 +17,7 @@ import (
 // response. The response must carry a Set-Cookie for the configured
 // padding key.
 func TestServeHTTPCookiePaddingIsSet(t *testing.T) {
+	t.Parallel()
 	opts := &option.V2RayXHTTPOptions{
 		Mode: "packet-up",
 		V2RayXHTTPBaseOptions: option.V2RayXHTTPBaseOptions{

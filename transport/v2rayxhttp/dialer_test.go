@@ -19,6 +19,7 @@ import (
 // an invalid request URL/host must produce an error, not a nil-pointer
 // panic on the discarded *http.Request.
 func TestOpenStreamInvalidURLReturnsError(t *testing.T) {
+	t.Parallel()
 	c := &DefaultDialerClient{
 		options: &option.V2RayXHTTPBaseOptions{},
 	}
@@ -93,6 +94,7 @@ func (rt *nonClosingRoundTripper) RoundTrip(req *http.Request) (*http.Response, 
 // RoundTripper already did. Leaving it open means the outbound believes
 // the upload pipe is still writable and hangs indefinitely.
 func TestOpenStreamClosesBodyOnTransportError(t *testing.T) {
+	t.Parallel()
 	c := &DefaultDialerClient{
 		options: &option.V2RayXHTTPBaseOptions{},
 		client: &http.Client{
@@ -110,6 +112,7 @@ func TestOpenStreamClosesBodyOnTransportError(t *testing.T) {
 // (matches Xray-core #6095), independent of whether the RoundTripper also
 // does so.
 func TestOpenStreamClosesBodyAfterUploadOnlyResponse(t *testing.T) {
+	t.Parallel()
 	c := &DefaultDialerClient{
 		options: &option.V2RayXHTTPBaseOptions{},
 		client: &http.Client{

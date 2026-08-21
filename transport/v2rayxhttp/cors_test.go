@@ -17,6 +17,7 @@ import (
 // validation runs, so it never gets rejected as an invalid uplink/downlink
 // request.
 func TestServeHTTPOptionsPreflight(t *testing.T) {
+	t.Parallel()
 	opts := &option.V2RayXHTTPOptions{
 		Mode: "packet-up",
 		V2RayXHTTPBaseOptions: option.V2RayXHTTPBaseOptions{
@@ -57,6 +58,7 @@ func TestServeHTTPOptionsPreflight(t *testing.T) {
 // uplink data can be placed in cookies, since combining it with a wildcard
 // Access-Control-Allow-Origin is invalid per the Fetch spec.
 func TestServeHTTPCORSCredentialsForCookiePlacement(t *testing.T) {
+	t.Parallel()
 	opts := &option.V2RayXHTTPOptions{
 		Mode: "packet-up",
 		V2RayXHTTPBaseOptions: option.V2RayXHTTPBaseOptions{

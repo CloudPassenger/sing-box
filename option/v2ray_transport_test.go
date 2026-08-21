@@ -13,6 +13,7 @@ import (
 // it unconditionally turned clean "file-like" paths (e.g. "/stream/x.ext")
 // into "/stream/x.ext/", which some CDNs/WAFs treat as suspicious or 403.
 func TestXHTTPGetNormalizedPathConditionalSlash(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name             string
 		path             string
@@ -68,6 +69,7 @@ func TestXHTTPGetNormalizedPathConditionalSlash(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			c := &V2RayXHTTPBaseOptions{
 				Path:             tc.path,
 				SessionPlacement: tc.sessionPlacement,
@@ -87,6 +89,7 @@ func TestXHTTPGetNormalizedPathConditionalSlash(t *testing.T) {
 // heuristics that specifically target XHTTP than several distinct
 // connections would be.
 func TestXHTTPDefaultXmuxMaxConnections(t *testing.T) {
+	t.Parallel()
 	opts := &V2RayXHTTPOptions{Mode: "packet-up"}
 	opts.XPaddingBytes = Xbadoption.Range{From: 100, To: 1000}
 	if err := checkV2RayXHTTPBaseOptions(opts.Mode, &opts.V2RayXHTTPBaseOptions); err != nil {
@@ -106,6 +109,7 @@ func TestXHTTPDefaultXmuxMaxConnections(t *testing.T) {
 // TestXHTTPServerMaxHeaderBytesValidation checks the server_max_header_bytes
 // validation and default (matches Xray-core's serverMaxHeaderBytes).
 func TestXHTTPServerMaxHeaderBytesValidation(t *testing.T) {
+	t.Parallel()
 	base := func() *V2RayXHTTPBaseOptions {
 		return &V2RayXHTTPBaseOptions{XPaddingBytes: Xbadoption.Range{From: 100, To: 1000}}
 	}
@@ -139,11 +143,13 @@ func TestXHTTPServerMaxHeaderBytesValidation(t *testing.T) {
 // be positive, and the table/length combination must offer a large enough
 // ID space (>= 2^31) to keep collisions and brute-forcing impractical.
 func TestXHTTPSessionIDTableValidation(t *testing.T) {
+	t.Parallel()
 	base := func() *V2RayXHTTPBaseOptions {
 		return &V2RayXHTTPBaseOptions{XPaddingBytes: Xbadoption.Range{From: 100, To: 1000}}
 	}
 
 	t.Run("predefined table name expands and normalizes", func(t *testing.T) {
+		t.Parallel()
 		c := base()
 		c.SessionIDTable = "hex"
 		c.SessionIDLength = Xbadoption.Range{From: 32, To: 32}
@@ -156,6 +162,7 @@ func TestXHTTPSessionIDTableValidation(t *testing.T) {
 	})
 
 	t.Run("non-ASCII table rejected", func(t *testing.T) {
+		t.Parallel()
 		c := base()
 		c.SessionIDTable = "abcé"
 		c.SessionIDLength = Xbadoption.Range{From: 32, To: 32}
@@ -165,6 +172,7 @@ func TestXHTTPSessionIDTableValidation(t *testing.T) {
 	})
 
 	t.Run("zero length rejected", func(t *testing.T) {
+		t.Parallel()
 		c := base()
 		c.SessionIDTable = "0123456789abcdef"
 		c.SessionIDLength = Xbadoption.Range{From: 0, To: 0}
@@ -174,6 +182,7 @@ func TestXHTTPSessionIDTableValidation(t *testing.T) {
 	})
 
 	t.Run("too small ID space rejected", func(t *testing.T) {
+		t.Parallel()
 		c := base()
 		c.SessionIDTable = "01" // 2-symbol table
 		c.SessionIDLength = Xbadoption.Range{From: 1, To: 1}
@@ -189,7 +198,9 @@ func TestXHTTPSessionIDTableValidation(t *testing.T) {
 // size, and a plain JSON number must still parse into a fixed range for
 // backward compatibility with existing "uplink_chunk_size": <n> configs.
 func TestXHTTPGetNormalizedUplinkChunkSize(t *testing.T) {
+	t.Parallel()
 	t.Run("cookie default is a range", func(t *testing.T) {
+		t.Parallel()
 		c := &V2RayXHTTPBaseOptions{UplinkDataPlacement: PlacementCookie}
 		got := c.GetNormalizedUplinkChunkSize()
 		if got.From != 2*1024 || got.To != 3*1024 {
@@ -198,6 +209,7 @@ func TestXHTTPGetNormalizedUplinkChunkSize(t *testing.T) {
 	})
 
 	t.Run("header default is a range", func(t *testing.T) {
+		t.Parallel()
 		c := &V2RayXHTTPBaseOptions{UplinkDataPlacement: PlacementHeader}
 		got := c.GetNormalizedUplinkChunkSize()
 		if got.From != 3000 || got.To != 4000 {
@@ -206,6 +218,7 @@ func TestXHTTPGetNormalizedUplinkChunkSize(t *testing.T) {
 	})
 
 	t.Run("explicit value below 64 is clamped", func(t *testing.T) {
+		t.Parallel()
 		c := &V2RayXHTTPBaseOptions{
 			UplinkDataPlacement: PlacementHeader,
 			UplinkChunkSize:     Xbadoption.Range{From: 10, To: 10},
@@ -217,6 +230,7 @@ func TestXHTTPGetNormalizedUplinkChunkSize(t *testing.T) {
 	})
 
 	t.Run("plain JSON number parses as a fixed range", func(t *testing.T) {
+		t.Parallel()
 		var r Xbadoption.Range
 		if err := r.UnmarshalJSON([]byte("4096")); err != nil {
 			t.Fatal(err)
