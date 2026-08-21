@@ -37,29 +37,53 @@ get_git_timestamp() {
 	fi
 }
 
+# Alpine compares the _p payload numerically, so the fork version is packed into
+# a fixed width. The trailing group carries the fork pre-release counter and uses
+# 999 for a final release, which keeps beta.1 < beta.2 < release.
 normalize_patch_suffix() {
 	local version="$1"
+	local core="${version%%-*}"
+	local prerelease=""
+	if [[ "$version" == *-* ]]; then
+		prerelease="${version#*-}"
+	fi
 	local major minor patch extra
-	IFS='.' read -r major minor patch extra <<<"$version"
+	IFS='.' read -r major minor patch extra <<<"$core"
 	: "${major:=0}" "${minor:=0}" "${patch:=0}"
-	printf '%03d%03d%03d' "$major" "$minor" "$patch"
+	local counter=999
+	if [[ -n "$prerelease" ]]; then
+		if [[ "$prerelease" =~ ^[a-z]+\.([0-9]+)$ ]]; then
+			counter="${BASH_REMATCH[1]}"
+		else
+			counter=0
+		fi
+	fi
+	printf '%03d%03d%03d%03d' "$major" "$minor" "$patch" "$counter"
 }
 
 to_apk_version() {
 	local version="$1"
-	if [[ "$version" =~ ^([0-9]+(\.[0-9]+)*?)-superpower-([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+	# The upstream half may itself be a pre-release, as in
+	# 1.14.0-beta.17-superpower-0.3.0-beta.1, and Alpine accepts one pre-release
+	# suffix followed by _p in exactly that order.
+	if [[ "$version" =~ ^([0-9]+(\.[0-9]+)*(-[a-z]+\.[0-9]+)?)-superpower-([0-9]+\.[0-9]+\.[0-9]+(-[a-z]+\.[0-9]+)?)$ ]]; then
 		local upstream_version="${BASH_REMATCH[1]}"
-		local fork_version="${BASH_REMATCH[3]}"
+		local fork_version="${BASH_REMATCH[4]}"
+		upstream_version=$(echo "$upstream_version" | sed -E 's/-([a-z]+)\.([0-9]+)/_\1\2/')
 		echo "${upstream_version}_p$(normalize_patch_suffix "$fork_version")-r0"
 		return
 	fi
-	if [[ "$version" =~ ^([0-9]+(\.[0-9]+)*?)-superpower(-testing)?-[0-9a-f]+$ ]]; then
+	# Snapshot builds off a branch carry the short commit instead of a fork
+	# version, and their upstream half may be a pre-release too.
+	if [[ "$version" =~ ^([0-9]+(\.[0-9]+)*(-[a-z]+\.[0-9]+)?)-superpower(-testing)?-[0-9a-f]+$ ]]; then
 		local upstream_version="${BASH_REMATCH[1]}"
+		upstream_version=$(echo "$upstream_version" | sed -E 's/-([a-z]+)\.([0-9]+)/_\1\2/')
 		echo "${upstream_version}_git$(get_git_timestamp)-r0"
 		return
 	fi
-	if [[ "$version" =~ ^([0-9]+(\.[0-9]+)*?)-([0-9a-f]+)$ ]]; then
+	if [[ "$version" =~ ^([0-9]+(\.[0-9]+)*(-[a-z]+\.[0-9]+)?)-([0-9a-f]+)$ ]]; then
 		local upstream_version="${BASH_REMATCH[1]}"
+		upstream_version=$(echo "$upstream_version" | sed -E 's/-([a-z]+)\.([0-9]+)/_\1\2/')
 		echo "${upstream_version}_git$(get_git_timestamp)-r0"
 		return
 	fi
@@ -70,11 +94,12 @@ to_apk_version() {
 }
 
 # Convert version to APK format using Alpine-compatible suffixes:
-#   1.13.0-beta.8                  -> 1.13.0_beta8-r0
-#   1.13.0-rc.3                    -> 1.13.0_rc3-r0
-#   1.13.6-superpower-0.1.0        -> 1.13.6_p000001000-r0
-#   1.13.6-superpower-bc1d840d     -> 1.13.6_git20260409123456-r0
-#   1.13.0                         -> 1.13.0-r0
+#   1.13.0-beta.8                          -> 1.13.0_beta8-r0
+#   1.13.0-rc.3                            -> 1.13.0_rc3-r0
+#   1.13.6-superpower-0.1.0                -> 1.13.6_p000001000999-r0
+#   1.14.0-beta.17-superpower-0.3.0-beta.1 -> 1.14.0_beta17_p000003000001-r0
+#   1.13.6-superpower-bc1d840d             -> 1.13.6_git20260409123456-r0
+#   1.13.0                                 -> 1.13.0-r0
 APK_VERSION=$(to_apk_version "$VERSION")
 
 ROOT_DIR=$(mktemp -d)
