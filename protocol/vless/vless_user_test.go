@@ -117,7 +117,7 @@ func newVLESSHandshakeTestHarness(
 		ctx,
 		"",
 		logger.NOP(),
-		adapter.NewUpstreamContextHandlerEx(
+		adapter.NewUpstreamContextHandler(
 			inbound.newConnectionEx,
 			inbound.newPacketConnectionEx,
 		),
@@ -153,7 +153,7 @@ func (h *vlessHandshakeTestHarness) acceptConnections() {
 		go func() {
 			defer h.connectionGroup.Done()
 			defer conn.Close()
-			h.inbound.NewConnectionEx(h.ctx, conn, adapter.InboundContext{}, nil)
+			h.inbound.NewConnection(h.ctx, conn, adapter.InboundContext{}, nil)
 		}()
 	}
 }
