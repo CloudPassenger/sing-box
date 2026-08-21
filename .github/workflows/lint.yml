@@ -70,10 +70,10 @@ jobs:
           GOARCH: ${{ matrix.goarch }}
         with:
           # Pinned deliberately: "latest" turns every golangci-lint release into
-          # an unannounced CI break. v2.13.x reports findings that upstream
-          # sing-box itself does not satisfy, so bump this only together with the
-          # fixes a new version demands.
-          version: v2.12.2
+          # an unannounced CI break. v2.13.1 is the version upstream/testing was
+          # verified against and reports 0 issues on the 1.14 baseline, so bump
+          # this only together with the fixes a new version demands.
+          version: v2.13.1
           args: --timeout=30m
           install-mode: binary
           verify: false
