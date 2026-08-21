@@ -22,6 +22,7 @@ icon: material/new-box
     }
   ],
   "obfs_mode": "",
+  "managed": false,
   "speed_test": "allow"
 }
 ```
@@ -44,6 +45,7 @@ icon: material/new-box
     }
   ],
   "mode": "",
+  "managed": false,
   "speed_test": "allow"
 }
 ```
@@ -96,6 +98,13 @@ HTTP 混淆模式，`none` `http` 之一。
 流量整形模式，`default` `unshaped` `unsafe-raw` 之一。
 
 默认为 `default`。
+
+#### managed
+
+为此入站启用托管用户 API。
+
+多用户服务仅根据用户列表进行认证，不会回退到顶层 `psk`，因此在没有静态 `users`
+条目时必须启用此选项才能接受托管用户。静态用户与托管用户之中至少要保留一个。
 
 #### speed_test
 

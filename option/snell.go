@@ -18,8 +18,9 @@ type _SnellInboundOptions struct {
 
 type AbstractSnellInboundOptions struct {
 	ListenOptions
-	PSK   string      `json:"psk"`
-	Users []SnellUser `json:"users,omitempty"`
+	PSK     string      `json:"psk"`
+	Users   []SnellUser `json:"users,omitempty"`
+	Managed bool        `json:"managed,omitempty"`
 	InboundSpeedTestOptions
 }
 
