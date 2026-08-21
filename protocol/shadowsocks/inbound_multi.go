@@ -104,7 +104,7 @@ func newMultiInbound(
 			options.Method,
 			options.Password,
 			int64(udpTimeout.Seconds()),
-			adapter.NewUpstreamHandler(
+			adapter.NewLegacyUpstreamHandler(
 				adapter.InboundContext{},
 				multiInbound.newConnection,
 				multiInbound.newPacketConnection,
@@ -135,7 +135,7 @@ func newMultiInbound(
 		service, serviceErr := shadowaead.NewMultiService[adapter.UserID](
 			options.Method,
 			int64(udpTimeout.Seconds()),
-			adapter.NewUpstreamHandler(
+			adapter.NewLegacyUpstreamHandler(
 				adapter.InboundContext{},
 				multiInbound.newConnection,
 				multiInbound.newPacketConnection,
@@ -165,7 +165,7 @@ func newMultiInbound(
 	service, err := shadowaead.NewMultiService[adapter.UserID](
 		options.Method,
 		int64(udpTimeout.Seconds()),
-		adapter.NewUpstreamHandler(
+		adapter.NewLegacyUpstreamHandler(
 			adapter.InboundContext{},
 			legacyInbound.newConnection,
 			legacyInbound.newPacketConnection,
@@ -296,18 +296,18 @@ func (h *legacyMultiInbound) Close() error {
 }
 
 //nolint:staticcheck
-func (h *legacyMultiInbound) NewConnectionEx(
+func (h *legacyMultiInbound) NewConnection(
 	ctx context.Context,
 	conn net.Conn,
 	metadata adapter.InboundContext,
 	onClose N.CloseHandlerFunc,
 ) {
-	(*MultiInbound)(h).NewConnectionEx(ctx, conn, metadata, onClose)
+	(*MultiInbound)(h).NewConnection(ctx, conn, metadata, onClose)
 }
 
 //nolint:staticcheck
-func (h *legacyMultiInbound) NewPacketEx(buffer *buf.Buffer, source M.Socksaddr) {
-	(*MultiInbound)(h).NewPacketEx(buffer, source)
+func (h *legacyMultiInbound) NewPacket(buffer *buf.Buffer, source M.Socksaddr) {
+	(*MultiInbound)(h).NewPacket(buffer, source)
 }
 
 func (h *legacyMultiInbound) newConnection(
