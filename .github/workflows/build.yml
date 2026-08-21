@@ -1014,7 +1014,10 @@ jobs:
   build_apple:
     name: Build Apple release clients
     runs-on: ${{ matrix.if && 'macos-26' || 'ubuntu-latest' }}
-    if: github.event_name != 'workflow_dispatch' || inputs.build == 'All' || inputs.build == 'Apple-release' || inputs.build == 'macOS-standalone'
+    # Dispatch only: signing these clients needs the Apple provisioning profile
+    # and certificate secrets, which this fork does not carry, so a branch push
+    # would always fail here.
+    if: github.event_name == 'workflow_dispatch' && (inputs.build == 'All' || inputs.build == 'Apple-release' || inputs.build == 'macOS-standalone')
     needs:
       - calculate_version
       - build_apple_library
