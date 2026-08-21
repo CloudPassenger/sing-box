@@ -31,7 +31,8 @@ icon: material/alert-decagram
   "ignore_client_bandwidth": false,
   "tls": {},
   "masquerade": "", // or {}
-  "brutal_debug": false
+  "brutal_debug": false,
+  "speed_test": "allow"
 }
 ```
 
@@ -144,3 +145,7 @@ Fixed response content.
 #### brutal_debug
 
 Enable debug information logging for Hysteria Brutal CC.
+
+#### speed_test
+
+See [Private Speed Test](/configuration/shared/private-speedtest/) for details.
