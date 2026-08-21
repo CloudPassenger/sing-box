@@ -15,6 +15,7 @@ import (
 // or both non-path, silently dropping session/seq values whenever exactly
 // one of them lived in the path and the other in a header/cookie/query.
 func TestExtractMetaFromRequestMixedPlacement(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name          string
 		sessionInPath bool
@@ -50,6 +51,7 @@ func TestExtractMetaFromRequestMixedPlacement(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			opts := &option.V2RayXHTTPOptions{}
 			opts.SessionKey = tc.sessionKey
 			opts.SeqKey = tc.seqKey
