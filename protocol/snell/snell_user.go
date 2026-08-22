@@ -22,9 +22,11 @@ var (
 )
 
 // snellMultiService is the subset of snellv5.MultiService and snellv6.MultiService
-// the managed user backend needs. Upstream snell exposes a single-phase setter
-// instead of the prepare/install pair the other protocols use, so this backend
-// validates the whole generation in Prepare and only swaps it in Commit.
+// the managed user backend needs. Snell exposes a single-phase setter instead of
+// the prepare/install pair the other protocols use, so this backend validates the
+// whole generation in Prepare and only swaps it in Commit. The pinned fork
+// publishes that swap atomically, so an authenticating connection can never
+// observe a torn user table.
 type snellMultiService interface {
 	UpdateUsers(users []adapter.UserID, userKeys [][]byte) error
 }
