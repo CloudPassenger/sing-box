@@ -208,4 +208,4 @@ replace github.com/sagernet/sing-quic => github.com/CloudPassenger/sing-quic v0.
 
 replace github.com/sagernet/sing-shadowsocks => github.com/CloudPassenger/sing-shadowsocks v0.0.0-20260824172859-8c878f71297f
 
-replace github.com/sagernet/sing-snell => github.com/CloudPassenger/sing-snell v0.0.0-20260822003357-1a8948b1b9b4
+replace github.com/sagernet/sing-snell => github.com/CloudPassenger/sing-snell v0.0.0-20260824122857-c8e4502abc80

@@ -16,8 +16,8 @@ github.com/CloudPassenger/sing-quic v0.0.0-20260824220529-7e8a1e95fe0d h1:v8nosV
 github.com/CloudPassenger/sing-quic v0.0.0-20260824220529-7e8a1e95fe0d/go.mod h1:Z+ZpYBLJ7WkPPrGSCYFxna4Dos2XrywEy6YH6SY5L6Q=
 github.com/CloudPassenger/sing-shadowsocks v0.0.0-20260824172859-8c878f71297f h1:HJidUoAGHsQrPmxuhh4eLVNkEKstU+x2ejP1AcChp9o=
 github.com/CloudPassenger/sing-shadowsocks v0.0.0-20260824172859-8c878f71297f/go.mod h1:lo7TWEMDcN5/h5B8S0ew+r78ZODn6SwVaFhvB6H+PTI=
-github.com/CloudPassenger/sing-snell v0.0.0-20260822003357-1a8948b1b9b4 h1:QstnJMzkIdpv+bUCXveUD5AGJmTJ4L5Gxu33sSnm/y0=
-github.com/CloudPassenger/sing-snell v0.0.0-20260822003357-1a8948b1b9b4/go.mod h1:et8Lws4f5QbOrY65DmjevHGup3mijJkhswkto6cwciM=
+github.com/CloudPassenger/sing-snell v0.0.0-20260824122857-c8e4502abc80 h1:qkBE7Y/rA5uoDhWdeBudKKMS4BDe1R1vq25NdeDmFoI=
+github.com/CloudPassenger/sing-snell v0.0.0-20260824122857-c8e4502abc80/go.mod h1:et8Lws4f5QbOrY65DmjevHGup3mijJkhswkto6cwciM=
 github.com/CloudPassenger/sing-vmess v0.2.8-0.20260824172859-f99ab5be7208 h1:7S6bkwnEKm3lmH5K4/Jd7avWleLNXLVRbx3ESIg4YAc=
 github.com/CloudPassenger/sing-vmess v0.2.8-0.20260824172859-f99ab5be7208/go.mod h1:ZeRYl1GULgvP4GWhqW/W1v0OoD8+iukQReyTNcFdiA8=
 github.com/RyuaNerin/go-krypto v1.3.0 h1:smavTzSMAx8iuVlGb4pEwl9MD2qicqMzuXR2QWp2/Pg=
