@@ -168,10 +168,10 @@ require (
 	lukechampine.com/blake3 v1.4.1 // indirect
 )
 
-replace github.com/anytls/sing-anytls => github.com/CloudPassenger/sing-anytls v0.0.0-20260728161219-3dd90913bf18
+replace github.com/anytls/sing-anytls => github.com/CloudPassenger/sing-anytls v0.0.0-20260728161219-160ca3c98e71
 
-replace github.com/sagernet/sing-vmess v0.2.8-0.20250909125414-3aed155119a1 => github.com/CloudPassenger/sing-vmess v0.2.8-0.20260728153648-7a5263c133f8
+replace github.com/sagernet/sing-vmess v0.2.8-0.20250909125414-3aed155119a1 => github.com/CloudPassenger/sing-vmess v0.2.8-0.20260824172859-f99ab5be7208
 
-replace github.com/sagernet/sing-quic => github.com/CloudPassenger/sing-quic v0.0.0-20260821165751-aa10404ac3fc
+replace github.com/sagernet/sing-quic => github.com/CloudPassenger/sing-quic v0.0.0-20260824172859-4776d7286f3f
 
-replace github.com/sagernet/sing-shadowsocks => github.com/CloudPassenger/sing-shadowsocks v0.0.0-20260729142143-a9821c088c37
+replace github.com/sagernet/sing-shadowsocks => github.com/CloudPassenger/sing-shadowsocks v0.0.0-20260824172859-8c878f71297f
