@@ -115,7 +115,7 @@ func newMultiInbound(
 			return nil, serviceErr
 		}
 		multiInbound.service = service
-		if err := multiInbound.initialize2022UserManager(ctx, service, options.Users); err != nil {
+		if err := multiInbound.initialize2022UserManager(ctx, options.Method, service, options.Users); err != nil {
 			return nil, err
 		}
 		multiInbound.listener = listener.New(listener.Options{

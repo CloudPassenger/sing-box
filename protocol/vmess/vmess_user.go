@@ -2,12 +2,15 @@ package vmess
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/sagernet/sing-box/adapter"
 	"github.com/sagernet/sing-box/common/usermanager"
 	"github.com/sagernet/sing-box/option"
 	"github.com/sagernet/sing-vmess"
 	E "github.com/sagernet/sing/common/exceptions"
+
+	"github.com/gofrs/uuid/v5"
 )
 
 const (
@@ -56,35 +59,64 @@ func (b *userBackend) Prepare(
 	users := make([]adapter.UserID, 0, userCount)
 	userIDs := make([]string, 0, userCount)
 	alterIDs := make([]int, 0, userCount)
+	uuidOwners := make(map[[16]byte]string, userCount)
 
-	for _, user := range b.unmanagedUsers {
-		users = append(users, "")
+	appendUser := func(userID adapter.UserID, user option.VMessUser, owner string) error {
+		if user.AlterId < 0 {
+			return E.New("invalid VMess alter ID for ", owner)
+		}
+		userUUID := vmessUserUUID(user.UUID)
+		if previousOwner, loaded := uuidOwners[userUUID]; loaded {
+			return E.New("duplicate VMess UUID credential for ", previousOwner, " and ", owner)
+		}
+		uuidOwners[userUUID] = owner
+		users = append(users, userID)
 		userIDs = append(userIDs, user.UUID)
 		alterIDs = append(alterIDs, user.AlterId)
-	}
-	for _, record := range records {
-		users = append(users, record.ID)
-		userIDs = append(userIDs, record.Value.UUID)
-		alterIDs = append(alterIDs, record.Value.AlterId)
+		return nil
 	}
 
-	prepared, err := b.service.PrepareUsers(users, userIDs, alterIDs)
-	if err != nil {
-		return nil, E.Cause(err, "prepare VMess users")
+	for index, user := range b.unmanagedUsers {
+		owner := fmt.Sprintf("unnamed static user #%d", index+1)
+		if err := appendUser("", user, owner); err != nil {
+			return nil, err
+		}
 	}
+	for _, record := range records {
+		owner := fmt.Sprintf("user %q", record.ID)
+		if err := appendUser(record.ID, record.Value, owner); err != nil {
+			return nil, err
+		}
+	}
+
 	return &publishedUsers{
-		service: b.service,
-		users:   prepared,
+		service:  b.service,
+		users:    users,
+		userIDs:  userIDs,
+		alterIDs: alterIDs,
 	}, nil
 }
 
+// vmessUserUUID mirrors the credential normalisation performed by the VMess
+// service, so duplicate credentials are detected before publication.
+func vmessUserUUID(value string) [16]byte {
+	userUUID, err := uuid.FromString(value)
+	if err != nil {
+		userUUID = uuid.NewV5(uuid.Nil, value)
+	}
+	return userUUID
+}
+
 type publishedUsers struct {
-	service *vmess.Service[adapter.UserID]
-	users   *vmess.PreparedUsers[adapter.UserID]
+	service  *vmess.Service[adapter.UserID]
+	users    []adapter.UserID
+	userIDs  []string
+	alterIDs []int
 }
 
 func (p *publishedUsers) Commit() {
-	p.service.InstallUsers(p.users)
+	// Prepare validated every credential, so publication cannot fail.
+	_ = p.service.UpdateUsers(p.users, p.userIDs, p.alterIDs)
 }
 
 func fingerprintVMessString(fingerprint uint64, value string) uint64 {

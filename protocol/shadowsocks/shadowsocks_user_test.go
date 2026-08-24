@@ -487,7 +487,7 @@ func TestShadowsocksUserBackendIdentityAndFingerprint(t *testing.T) {
 		name    string
 		backend shadowsocksUserIdentityBackend
 	}{
-		{name: "2022", backend: newShadowsocks2022UserBackend(nil, nil)},
+		{name: "2022", backend: newShadowsocks2022UserBackend(nil, 16, nil)},
 		{name: "legacy", backend: newLegacyShadowsocksUserBackend(nil, nil)},
 	}
 	for _, test := range backends {
