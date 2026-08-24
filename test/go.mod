@@ -6,7 +6,7 @@ require github.com/sagernet/sing-box v0.0.0
 
 replace github.com/sagernet/sing-box => ../
 
-replace github.com/sagernet/sing-vmess v0.2.8-0.20250909125414-3aed155119a1 => github.com/CloudPassenger/sing-vmess v0.0.0-20260409002451-b6c88ce449d0
+replace github.com/sagernet/sing-vmess v0.2.8-0.20250909125414-3aed155119a1 => github.com/CloudPassenger/sing-vmess v0.2.8-0.20260824172859-f99ab5be7208
 
 require (
 	github.com/docker/docker v27.3.1+incompatible
@@ -188,3 +188,9 @@ require (
 	gotest.tools/v3 v3.5.1 // indirect
 	lukechampine.com/blake3 v1.4.1 // indirect
 )
+
+replace github.com/anytls/sing-anytls => github.com/CloudPassenger/sing-anytls v0.0.0-20260728161219-160ca3c98e71
+
+replace github.com/sagernet/sing-quic => github.com/CloudPassenger/sing-quic v0.0.0-20260824172859-4776d7286f3f
+
+replace github.com/sagernet/sing-shadowsocks => github.com/CloudPassenger/sing-shadowsocks v0.0.0-20260824172859-8c878f71297f
