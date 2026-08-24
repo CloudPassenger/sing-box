@@ -3,6 +3,7 @@ package shadowsocks
 import (
 	"cmp"
 	"context"
+	"encoding/base64"
 	"slices"
 	"strconv"
 	"strings"
@@ -64,15 +65,18 @@ func (shadowsocksUserIdentity) FingerprintUser(user option.ShadowsocksUser) uint
 type shadowsocks2022UserBackend struct {
 	shadowsocksUserIdentity
 	service        *shadowaead_2022.MultiService[adapter.UserID]
+	keySaltLength  int
 	unmanagedUsers []unmanagedShadowsocksUser
 }
 
 func newShadowsocks2022UserBackend(
 	service *shadowaead_2022.MultiService[adapter.UserID],
+	keySaltLength int,
 	unmanagedUsers []unmanagedShadowsocksUser,
 ) *shadowsocks2022UserBackend {
 	return &shadowsocks2022UserBackend{
 		service:        service,
+		keySaltLength:  keySaltLength,
 		unmanagedUsers: unmanagedUsers,
 	}
 }
@@ -81,23 +85,52 @@ func (b *shadowsocks2022UserBackend) Prepare(
 	records []usermanager.Record[option.ShadowsocksUser],
 ) (usermanager.Published, error) {
 	userIDs, passwords := mergeShadowsocksUsers(b.unmanagedUsers, records)
-	users, err := b.service.PrepareUsersWithPasswords(userIDs, passwords)
-	if err != nil {
-		return nil, E.Cause(err, "compile Shadowsocks 2022 users")
+	if err := validateShadowsocksUserIDs(userIDs); err != nil {
+		return nil, err
+	}
+	keys := make([][]byte, len(userIDs))
+	keyOwners := make(map[string]adapter.UserID, len(userIDs))
+	for index, password := range passwords {
+		userID := userIDs[index]
+		if password == "" {
+			return nil, E.New("missing PSK for Shadowsocks 2022 ", shadowsocksUserLabel(userID))
+		}
+		key, err := base64.StdEncoding.DecodeString(password)
+		if err != nil {
+			return nil, E.Cause(err, "decode PSK for Shadowsocks 2022 ", shadowsocksUserLabel(userID))
+		}
+		if len(key) < b.keySaltLength {
+			return nil, E.New("bad PSK length for Shadowsocks 2022 ", shadowsocksUserLabel(userID))
+		} else if len(key) > b.keySaltLength {
+			key = shadowaead_2022.Key(key, b.keySaltLength)
+		}
+		if previousOwner, loaded := keyOwners[string(key)]; loaded {
+			return nil, E.New(
+				"duplicate Shadowsocks 2022 PSK for ",
+				shadowsocksUserLabel(previousOwner),
+				" and ",
+				shadowsocksUserLabel(userID),
+			)
+		}
+		keyOwners[string(key)] = userID
+		keys[index] = key
 	}
 	return &publishedShadowsocks2022Users{
 		service: b.service,
-		users:   users,
+		userIDs: userIDs,
+		keys:    keys,
 	}, nil
 }
 
 type publishedShadowsocks2022Users struct {
 	service *shadowaead_2022.MultiService[adapter.UserID]
-	users   *shadowaead_2022.PreparedUsers[adapter.UserID]
+	userIDs []adapter.UserID
+	keys    [][]byte
 }
 
 func (p *publishedShadowsocks2022Users) Commit() {
-	p.service.PublishUsers(p.users)
+	// Prepare decoded, normalised and validated every key, so publication cannot fail.
+	_ = p.service.UpdateUsers(p.userIDs, p.keys)
 }
 
 type legacyShadowsocksUserBackend struct {
@@ -120,23 +153,63 @@ func (b *legacyShadowsocksUserBackend) Prepare(
 	records []usermanager.Record[option.ShadowsocksUser],
 ) (usermanager.Published, error) {
 	userIDs, passwords := mergeShadowsocksUsers(b.unmanagedUsers, records)
-	users, err := b.service.PrepareUsersWithPasswords(userIDs, passwords)
-	if err != nil {
-		return nil, E.Cause(err, "compile legacy Shadowsocks users")
+	if err := validateShadowsocksUserIDs(userIDs); err != nil {
+		return nil, err
+	}
+	passwordOwners := make(map[string]adapter.UserID, len(userIDs))
+	for index, password := range passwords {
+		userID := userIDs[index]
+		if password == "" {
+			return nil, E.New("missing password for legacy Shadowsocks ", shadowsocksUserLabel(userID))
+		}
+		if previousOwner, loaded := passwordOwners[password]; loaded {
+			return nil, E.New(
+				"duplicate legacy Shadowsocks password for ",
+				shadowsocksUserLabel(previousOwner),
+				" and ",
+				shadowsocksUserLabel(userID),
+			)
+		}
+		passwordOwners[password] = userID
 	}
 	return &publishedLegacyShadowsocksUsers{
-		service: b.service,
-		users:   users,
+		service:   b.service,
+		userIDs:   userIDs,
+		passwords: passwords,
 	}, nil
 }
 
 type publishedLegacyShadowsocksUsers struct {
-	service *shadowaead.MultiService[adapter.UserID]
-	users   *shadowaead.PreparedUsers[adapter.UserID]
+	service   *shadowaead.MultiService[adapter.UserID]
+	userIDs   []adapter.UserID
+	passwords []string
 }
 
 func (p *publishedLegacyShadowsocksUsers) Commit() {
-	p.service.PublishUsers(p.users)
+	// Prepare validated every password, and key derivation always yields a
+	// correctly sized key, so publication cannot fail.
+	_ = p.service.UpdateUsersWithPasswords(p.userIDs, p.passwords)
+}
+
+// validateShadowsocksUserIDs rejects colliding identities. Merged users are
+// sorted by ID, so equal IDs are always adjacent.
+func validateShadowsocksUserIDs(userIDs []adapter.UserID) error {
+	for index := 1; index < len(userIDs); index++ {
+		if userIDs[index] == userIDs[index-1] {
+			return E.New("duplicate Shadowsocks ", shadowsocksUserLabel(userIDs[index]))
+		}
+	}
+	return nil
+}
+
+func shadowsocksUserLabel(userID adapter.UserID) string {
+	if index, static := strings.CutPrefix(string(userID), shadowsocksStaticUserIDPrefix); static {
+		return "unnamed static user #" + index
+	}
+	if user, ssm := strings.CutPrefix(string(userID), shadowsocksSSMUserIDPrefix); ssm {
+		return "SSM user " + strconv.Quote(user)
+	}
+	return "user " + strconv.Quote(string(userID))
 }
 
 func mergeShadowsocksUsers(
@@ -209,16 +282,32 @@ func fingerprintShadowsocksString(fingerprint uint64, value string) uint64 {
 
 func (h *MultiInbound) initialize2022UserManager(
 	ctx context.Context,
+	method string,
 	service *shadowaead_2022.MultiService[adapter.UserID],
 	users []option.ShadowsocksUser,
 ) error {
+	keySaltLength, err := shadowsocks2022KeySaltLength(method)
+	if err != nil {
+		return err
+	}
 	managedUsers, unmanagedUsers, unmanagedUserLabels := splitShadowsocksUsers(users)
 	return h.initializeUserManager(
 		ctx,
 		managedUsers,
 		unmanagedUserLabels,
-		newShadowsocks2022UserBackend(service, unmanagedUsers),
+		newShadowsocks2022UserBackend(service, keySaltLength, unmanagedUsers),
 	)
+}
+
+func shadowsocks2022KeySaltLength(method string) (int, error) {
+	switch method {
+	case "2022-blake3-aes-128-gcm":
+		return 16, nil
+	case "2022-blake3-aes-256-gcm":
+		return 32, nil
+	default:
+		return 0, E.New("unsupported Shadowsocks 2022 method: ", method)
+	}
 }
 
 func (h *MultiInbound) initializeLegacyUserManager(

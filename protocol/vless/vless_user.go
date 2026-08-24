@@ -2,12 +2,15 @@ package vless
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/sagernet/sing-box/adapter"
 	"github.com/sagernet/sing-box/common/usermanager"
 	"github.com/sagernet/sing-box/option"
 	vmessvless "github.com/sagernet/sing-vmess/vless"
 	E "github.com/sagernet/sing/common/exceptions"
+
+	"github.com/gofrs/uuid/v5"
 )
 
 const (
@@ -56,33 +59,65 @@ func (b *userBackend) Prepare(
 	userIDs := make([]adapter.UserID, 0, userCount)
 	userUUIDs := make([]string, 0, userCount)
 	userFlows := make([]string, 0, userCount)
-	for _, user := range b.unmanagedUsers {
-		userIDs = append(userIDs, "")
+	uuidOwners := make(map[[16]byte]string, userCount)
+
+	appendUser := func(userID adapter.UserID, user option.VLESSUser, owner string) error {
+		switch user.Flow {
+		case "", vmessvless.FlowVision:
+		default:
+			return E.New("unsupported VLESS flow for ", owner)
+		}
+		userUUID := vlessUserUUID(user.UUID)
+		if previousOwner, loaded := uuidOwners[userUUID]; loaded {
+			return E.New("duplicate VLESS UUID for ", previousOwner, " and ", owner)
+		}
+		uuidOwners[userUUID] = owner
+		userIDs = append(userIDs, userID)
 		userUUIDs = append(userUUIDs, user.UUID)
 		userFlows = append(userFlows, user.Flow)
+		return nil
+	}
+
+	for index, user := range b.unmanagedUsers {
+		owner := fmt.Sprintf("unnamed static user #%d", index+1)
+		if err := appendUser("", user, owner); err != nil {
+			return nil, err
+		}
 	}
 	for _, record := range records {
-		userIDs = append(userIDs, record.ID)
-		userUUIDs = append(userUUIDs, record.Value.UUID)
-		userFlows = append(userFlows, record.Value.Flow)
+		owner := fmt.Sprintf("user %q", record.ID)
+		if err := appendUser(record.ID, record.Value, owner); err != nil {
+			return nil, err
+		}
 	}
-	users, err := b.service.PrepareUsers(userIDs, userUUIDs, userFlows)
-	if err != nil {
-		return nil, E.Cause(err, "compile VLESS users")
-	}
+
 	return &publishedUsers{
-		service: b.service,
-		users:   users,
+		service:   b.service,
+		userIDs:   userIDs,
+		userUUIDs: userUUIDs,
+		userFlows: userFlows,
 	}, nil
 }
 
+// vlessUserUUID mirrors the credential normalisation performed by the VLESS
+// service, so duplicate credentials are detected before publication.
+func vlessUserUUID(value string) [16]byte {
+	userUUID, err := uuid.FromString(value)
+	if err != nil {
+		userUUID = uuid.NewV5(uuid.Nil, value)
+	}
+	return userUUID
+}
+
 type publishedUsers struct {
-	service *vmessvless.Service[adapter.UserID]
-	users   *vmessvless.PreparedUsers[adapter.UserID]
+	service   *vmessvless.Service[adapter.UserID]
+	userIDs   []adapter.UserID
+	userUUIDs []string
+	userFlows []string
 }
 
 func (p *publishedUsers) Commit() {
-	p.service.InstallUsers(p.users)
+	p.service.UpdateUsers(p.userIDs, p.userUUIDs, p.userFlows)
 }
 
 func fingerprintVLESSString(fingerprint uint64, value string) uint64 {
