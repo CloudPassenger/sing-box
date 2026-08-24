@@ -99,18 +99,22 @@ func (b *userBackend) Prepare(
 	}
 
 	return &publishedUsers{
-		service: b.service,
-		state:   tuic.NewUserState(userList, uuidList, passwordList),
+		service:      b.service,
+		userList:     userList,
+		uuidList:     uuidList,
+		passwordList: passwordList,
 	}, nil
 }
 
 type publishedUsers struct {
-	service *tuic.Service[adapter.UserID]
-	state   *tuic.UserState[adapter.UserID]
+	service      *tuic.Service[adapter.UserID]
+	userList     []adapter.UserID
+	uuidList     [][16]byte
+	passwordList []string
 }
 
 func (p *publishedUsers) Commit() {
-	p.service.UpdateUserState(p.state)
+	p.service.UpdateUsers(p.userList, p.uuidList, p.passwordList)
 }
 
 func fingerprintTUICString(fingerprint uint64, value string) uint64 {

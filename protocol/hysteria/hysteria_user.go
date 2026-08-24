@@ -86,18 +86,20 @@ func (b *userBackend) Prepare(
 	}
 
 	return &publishedUsers{
-		service: b.service,
-		state:   hysteria.NewUserState(userList, passwordList),
+		service:      b.service,
+		userList:     userList,
+		passwordList: passwordList,
 	}, nil
 }
 
 type publishedUsers struct {
-	service *hysteria.Service[adapter.UserID]
-	state   *hysteria.UserState[adapter.UserID]
+	service      *hysteria.Service[adapter.UserID]
+	userList     []adapter.UserID
+	passwordList []string
 }
 
 func (p *publishedUsers) Commit() {
-	p.service.UpdateUserState(p.state)
+	p.service.UpdateUsers(p.userList, p.passwordList)
 }
 
 func fingerprintHysteriaBytes(fingerprint uint64, value []byte) uint64 {
