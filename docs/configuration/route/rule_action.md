@@ -2,6 +2,10 @@
 icon: material/new-box
 ---
 
+!!! quote "Fork addition (superpower)"
+
+    :material-plus: [pass](#pass)
+
 !!! quote "Changes in sing-box 1.13.0"
 
     :material-plus: [bypass](#bypass)  
@@ -136,6 +140,22 @@ Not available when `method` is set to drop.
 `hijack-dns` hijack DNS requests to the sing-box DNS module.
 
 ## Non-final actions
+
+### pass
+
+!!! question "Fork addition (superpower)"
+
+```json
+{
+  "action": "pass"
+}
+```
+
+`pass` matches the rule but performs no action, and matching continues with the next rule.
+
+Equivalent to Clash/Mihomo's `PASS` rule action. Useful for carving out exceptions inside a
+broader matching rule (e.g. an ad-block rule-set) without needing a separate `outbound`,
+since it never terminates matching and never selects an outbound by itself.
 
 ### route-options
 
