@@ -2,6 +2,10 @@
 icon: material/new-box
 ---
 
+!!! quote "Fork addition (superpower)"
+
+    :material-plus: [pass](#pass)
+
 !!! quote "Changes in sing-box 1.14.0"
 
     :material-delete-clock: [strategy](#strategy)  
@@ -266,7 +270,19 @@ Only allowed after a preceding top-level `evaluate` rule. If the action is reach
 }
 ```
 
-`route-options` set options for routing.
+### pass
+
+!!! question "Fork addition (superpower)"
+
+```json
+{
+  "action": "pass"
+}
+```
+
+`pass` matches the rule but performs no action, and matching continues with the next rule.
+
+Equivalent to Clash/Mihomo's `PASS` rule action.
 
 ### reject
 

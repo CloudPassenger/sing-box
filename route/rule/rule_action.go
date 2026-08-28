@@ -103,6 +103,8 @@ func NewRuleAction(ctx context.Context, logger logger.ContextLogger, action opti
 		}, nil
 	case C.RuleActionTypeHijackDNS:
 		return &RuleActionHijackDNS{}, nil
+	case C.RuleActionTypePass:
+		return &RuleActionPass{}, nil
 	case C.RuleActionTypeSniff:
 		sniffAction := &RuleActionSniff{
 			SnifferNames: action.SniffOptions.Sniffer,
@@ -182,6 +184,8 @@ func NewDNSRuleAction(logger logger.ContextLogger, action option.DNSRuleAction) 
 			Ns:     common.Map(action.PredefinedOptions.Ns, option.DNSRecordOptions.Build),
 			Extra:  common.Map(action.PredefinedOptions.Extra, option.DNSRecordOptions.Build),
 		}
+	case C.RuleActionTypePass:
+		return &RuleActionPass{}
 	default:
 		panic(F.ToString("unknown rule action: ", action.Action))
 	}
@@ -220,6 +224,16 @@ func (r *RuleActionBypass) String() string {
 	descriptions = append(descriptions, r.Outbound)
 	descriptions = append(descriptions, r.Descriptions()...)
 	return F.ToString("bypass(", strings.Join(descriptions, ","), ")")
+}
+
+type RuleActionPass struct{}
+
+func (r *RuleActionPass) Type() string {
+	return C.RuleActionTypePass
+}
+
+func (r *RuleActionPass) String() string {
+	return "pass"
 }
 
 type RuleActionRouteOptions struct {

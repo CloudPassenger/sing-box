@@ -2,6 +2,10 @@
 icon: material/new-box
 ---
 
+!!! quote "Fork 新增（superpower）"
+
+    :material-plus: [pass](#pass)
+
 !!! quote "sing-box 1.13.0 中的更改"
 
     :material-plus: [bypass](#bypass)  
@@ -129,6 +133,21 @@ icon: material/new-box
 `hijack-dns` 劫持 DNS 请求至 sing-box DNS 模块。
 
 ## 非最终动作
+
+### pass
+
+!!! question "Fork 新增（superpower）"
+
+```json
+{
+  "action": "pass"
+}
+```
+
+`pass` 匹配该规则但不执行任何动作，并继续匹配后续规则。
+
+等价于 Clash/Mihomo 的 `PASS` 规则动作。适合在一条较宽泛的匹配规则(例如广告过滤 rule-set)中
+挖出例外情况,且无需指定 `outbound`——因为它永远不会终止匹配,也不会自行选择出站。
 
 ### route-options
 
