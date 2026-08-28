@@ -32,7 +32,7 @@ func IsFinalAction(action RuleAction) bool {
 		return false
 	}
 	switch action.Type() {
-	case C.RuleActionTypeSniff, C.RuleActionTypeResolve, C.RuleActionTypeRouteOptions, C.RuleActionTypeLimitOptions:
+	case C.RuleActionTypeSniff, C.RuleActionTypeResolve, C.RuleActionTypeRouteOptions, C.RuleActionTypeLimitOptions, C.RuleActionTypePass:
 		return false
 	default:
 		return true
