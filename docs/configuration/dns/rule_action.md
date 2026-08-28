@@ -2,6 +2,10 @@
 icon: material/new-box
 ---
 
+!!! quote "Fork addition (superpower)"
+
+    :material-plus: [pass](#pass)
+
 !!! quote "Changes in sing-box 1.12.0"
 
     :material-plus: [strategy](#strategy)  
@@ -66,6 +70,20 @@ Will overrides `dns.client_subnet`.
 ```
 
 `route-options` set options for routing.
+
+### pass
+
+!!! question "Fork addition (superpower)"
+
+```json
+{
+  "action": "pass"
+}
+```
+
+`pass` matches the rule but performs no action, and matching continues with the next rule.
+
+Equivalent to Clash/Mihomo's `PASS` rule action.
 
 ### reject
 

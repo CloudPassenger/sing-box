@@ -2,6 +2,10 @@
 icon: material/new-box
 ---
 
+!!! quote "Fork 新增（superpower）"
+
+    :material-plus: [pass](#pass)
+
 !!! quote "sing-box 1.12.0 中的更改"
 
     :material-plus: [strategy](#strategy)  
@@ -66,6 +70,20 @@ icon: material/new-box
 ```
 
 `route-options` 为路由设置选项。
+
+### pass
+
+!!! question "Fork 新增（superpower）"
+
+```json
+{
+  "action": "pass"
+}
+```
+
+`pass` 匹配该规则但不执行任何动作，并继续匹配后续规则。
+
+等价于 Clash/Mihomo 的 `PASS` 规则动作。
 
 ### reject
 
