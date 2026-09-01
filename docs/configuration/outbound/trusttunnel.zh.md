@@ -13,6 +13,11 @@ icon: material/new-box
 
   "server": "127.0.0.1",
   "server_port": 443,
+  "network": [
+    "tcp",
+    "udp",
+    "icmp"
+  ],
   "username": "trust",
   "password": "tunnel",
   "health_check": true,
@@ -46,9 +51,19 @@ icon: material/new-box
 
 #### password
 
-==必填==
-
 认证密码。
+
+#### network
+
+网络协议列表。
+
+可用值：
+
+- `tcp`
+- `udp`
+- `icmp`
+
+默认启用三者。`icmp` 将 ICMP 流量经隧道转发，需要 L3 转发可用。
 
 #### health_check
 

@@ -13,6 +13,11 @@ icon: material/new-box
 
   "server": "127.0.0.1",
   "server_port": 443,
+  "network": [
+    "tcp",
+    "udp",
+    "icmp"
+  ],
   "username": "trust",
   "password": "tunnel",
   "health_check": true,
@@ -46,9 +51,19 @@ Authentication username.
 
 #### password
 
-==Required==
-
 Authentication password.
+
+#### network
+
+Network list.
+
+Available values:
+
+- `tcp`
+- `udp`
+- `icmp`
+
+All three are enabled by default. `icmp` routes ICMP flows through the tunnel and requires L3 forwarding to be available.
 
 #### health_check
 

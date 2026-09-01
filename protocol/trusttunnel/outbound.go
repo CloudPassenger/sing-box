@@ -4,6 +4,8 @@ import (
 	"context"
 	"net"
 	"net/netip"
+	"os"
+	"slices"
 
 	"github.com/sagernet/sing-box/adapter"
 	"github.com/sagernet/sing-box/adapter/outbound"
@@ -12,6 +14,7 @@ import (
 	C "github.com/sagernet/sing-box/constant"
 	"github.com/sagernet/sing-box/log"
 	"github.com/sagernet/sing-box/option"
+	"github.com/sagernet/sing-tun"
 	"github.com/sagernet/sing/common"
 	"github.com/sagernet/sing/common/auth"
 	"github.com/sagernet/sing/common/bufio"
@@ -31,19 +34,22 @@ func RegisterOutbound(registry *outbound.Registry) {
 	outbound.Register[option.TrustTunnelOutboundOptions](registry, C.TypeTrustTunnel, NewOutbound)
 }
 
+var _ adapter.FlowOutbound = (*Outbound)(nil)
+
 type Outbound struct {
 	outbound.Adapter
 	ctx       context.Context
 	logger    log.ContextLogger
-	client    *trusttunnel.Client
 	dnsRouter adapter.DNSRouter
+	client    *trusttunnel.Client
+	icmpPort  *icmpPort
 }
 
 func NewOutbound(ctx context.Context, router adapter.Router, logger log.ContextLogger, tag string, options option.TrustTunnelOutboundOptions) (adapter.Outbound, error) {
 	if options.TLS == nil || !options.TLS.Enabled {
 		return nil, C.ErrTLSRequired
 	}
-	if options.Username == "" || options.Password == "" {
+	if options.Username == "" {
 		return nil, E.New("require auth")
 	}
 	detour, err := dialer.New(ctx, options.DialerOptions, options.ServerIsDomain())
@@ -79,13 +85,26 @@ func NewOutbound(ctx context.Context, router adapter.Router, logger log.ContextL
 	if err != nil {
 		return nil, err
 	}
+	networks := options.Network.Build()
+	var port *icmpPort
+	if slices.Contains(networks, N.NetworkICMP) {
+		port = newICMPPort(ctx, logger, client, 0)
+	}
 	return &Outbound{
-		Adapter:   outbound.NewAdapterWithDialerOptions(C.TypeTrustTunnel, tag, []string{N.NetworkTCP, N.NetworkUDP}, options.DialerOptions),
+		Adapter:   outbound.NewAdapterWithDialerOptions(C.TypeTrustTunnel, tag, networks, options.DialerOptions),
 		ctx:       ctx,
 		logger:    logger,
-		client:    client,
 		dnsRouter: dnsRouter,
+		client:    client,
+		icmpPort:  port,
 	}, nil
+}
+
+func (h *Outbound) Start(stage adapter.StartStage) error {
+	if stage != adapter.StartStateStart {
+		return nil
+	}
+	return h.client.Start()
 }
 
 func (h *Outbound) DialContext(ctx context.Context, network string, destination M.Socksaddr) (net.Conn, error) {
@@ -129,8 +148,51 @@ func (h *Outbound) InterfaceUpdated() {
 	h.client.ResetConnections()
 }
 
+func (h *Outbound) PreMatchFlow(network string, destination netip.Addr) adapter.PreMatchAction {
+	if network == N.NetworkICMP && h.icmpPort != nil {
+		return adapter.PreMatchFlow
+	}
+	return adapter.PreMatchContinue
+}
+
+func (h *Outbound) PortAddresses() (netip.Addr, netip.Addr) {
+	if h.icmpPort == nil {
+		return netip.Addr{}, netip.Addr{}
+	}
+	return h.icmpPort.PortAddresses()
+}
+
+func (h *Outbound) PortMTU() uint32 {
+	if h.icmpPort == nil {
+		return 0
+	}
+	return h.icmpPort.PortMTU()
+}
+
+func (h *Outbound) AttachReturn(returnPath tun.Return) error {
+	if h.icmpPort == nil {
+		return os.ErrInvalid
+	}
+	return h.icmpPort.AttachReturn(returnPath)
+}
+
+func (h *Outbound) DetachReturn(returnPath tun.Return) error {
+	if h.icmpPort == nil {
+		return os.ErrInvalid
+	}
+	return h.icmpPort.DetachReturn(returnPath)
+}
+
+func (h *Outbound) WritePackets(packets [][]byte) error {
+	if h.icmpPort == nil {
+		return os.ErrInvalid
+	}
+	return h.icmpPort.WritePackets(packets)
+}
+
 func (h *Outbound) Close() error {
 	return common.Close(
+		common.PtrOrNil(h.icmpPort),
 		common.PtrOrNil(h.client),
 	)
 }
