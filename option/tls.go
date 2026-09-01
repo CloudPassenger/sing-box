@@ -2,12 +2,12 @@ package option
 
 import (
 	"crypto/tls"
-	"encoding/json"
 	"reflect"
 	"strings"
 
 	"github.com/sagernet/sing-box/schema"
 	E "github.com/sagernet/sing/common/exceptions"
+	"github.com/sagernet/sing/common/json"
 	"github.com/sagernet/sing/common/json/badoption"
 )
 
@@ -229,7 +229,7 @@ type _InboundRealityFallbackLimit struct {
 type InboundRealityFallbackLimit _InboundRealityFallbackLimit
 
 func (l *InboundRealityFallbackLimit) UnmarshalJSON(data []byte) error {
-	err := json.Unmarshal(data, (*_InboundRealityFallbackLimit)(l))
+	err := json.UnmarshalDisallowUnknownFields(data, (*_InboundRealityFallbackLimit)(l))
 	if err != nil {
 		return err
 	}
