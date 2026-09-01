@@ -107,7 +107,7 @@ type AbstractDialerOptions struct {
 	NetworkType                badoption.Listable[InterfaceType] `json:"network_type,omitempty"`
 	FallbackNetworkType        badoption.Listable[InterfaceType] `json:"fallback_network_type,omitempty"`
 	FallbackDelay              badoption.Duration                `json:"fallback_delay,omitempty"`
-	ProxyProtocol              ProxyProtocolVersion              `json:"proxy_protocol,omitempty" schema:"omit"`
+	ProxyProtocol              ProxyProtocolVersion              `json:"proxy_protocol,omitempty"`
 
 	// Deprecated: migrated to domain resolver
 	DomainStrategy DomainStrategy `json:"domain_strategy,omitempty" schema:"omit"`
@@ -140,6 +140,17 @@ func (v *ProxyProtocolVersion) UnmarshalJSON(data []byte) error {
 	}
 	*v = ProxyProtocolVersion(intValue)
 	return nil
+}
+
+// DescribeSchema is required because the custom UnmarshalJSON above accepts
+// both the boolean and the numeric form: without it the 1.14 schema generator
+// rejects this type as an unmapped custom JSON type and `sing-box schema`
+// fails outright.
+func (v ProxyProtocolVersion) DescribeSchema(builder schema.Builder) (*schema.Node, error) {
+	return schema.AnyOf(
+		schema.BooleanNode(),
+		&schema.Node{Type: "integer", Enum: []any{0, 1, 2}},
+	), nil
 }
 
 type _DomainResolveOptions struct {
