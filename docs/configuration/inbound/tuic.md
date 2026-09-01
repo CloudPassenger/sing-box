@@ -19,6 +19,7 @@
   "zero_rtt_handshake": false,
   "heartbeat": "10s",
   "tls": {},
+  "speed_test": "allow"
 
   ... // QUIC Fields
 }
@@ -78,6 +79,10 @@ Interval for sending heartbeat packets for keeping the connection alive
 ==Required==
 
 TLS configuration, see [TLS](/configuration/shared/tls/#inbound).
+
+#### speed_test
+
+See [Private Speed Test](/configuration/shared/private-speedtest/) for details.
 
 ### QUIC Fields
 

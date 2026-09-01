@@ -55,7 +55,8 @@ icon: material/alert-decagram
       "lifetime": ""
     },
     "http_client": {}
-  }
+  },
+  "speed_test": "allow"
 }
 ```
 
@@ -277,3 +278,6 @@ Realm 上的槽位标识符。
 与 realm 通信使用的 HTTP 客户端。
 
 参阅 [HTTP 客户端](/zh/configuration/shared/http-client/) 了解详情。
+#### speed_test
+
+参阅 [私有测速](/zh/configuration/shared/private-speedtest/)。
