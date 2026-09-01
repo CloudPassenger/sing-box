@@ -3,6 +3,8 @@ package rule
 import (
 	"context"
 	"errors"
+	"fmt"
+	"net"
 	"net/netip"
 	"strings"
 	"sync"
@@ -14,6 +16,7 @@ import (
 	"github.com/sagernet/sing-box/common/tlsspoof"
 	C "github.com/sagernet/sing-box/constant"
 	"github.com/sagernet/sing-box/option"
+	"github.com/sagernet/sing-box/route/limit"
 	"github.com/sagernet/sing/common"
 	E "github.com/sagernet/sing/common/exceptions"
 	F "github.com/sagernet/sing/common/format"
@@ -45,7 +48,7 @@ func newRuleActionRouteOptions(options option.RawRouteOptionsActionOptions) (Rul
 	}, nil
 }
 
-func NewRuleAction(ctx context.Context, logger logger.ContextLogger, action option.RuleAction) (adapter.RuleAction, error) {
+func NewRuleAction(ctx context.Context, logger logger.ContextLogger, action option.RuleAction, defaultLimitScope string) (adapter.RuleAction, error) {
 	switch action.Action {
 	case "":
 		return nil, nil
@@ -119,6 +122,35 @@ func NewRuleAction(ctx context.Context, logger logger.ContextLogger, action opti
 			RewriteTTL:             action.ResolveOptions.RewriteTTL,
 			ClientSubnet:           action.ResolveOptions.ClientSubnet.Build(netip.Prefix{}),
 		}, nil
+	case C.RuleActionTypeLimitOptions:
+		limitAction := &RuleActionLimitOptions{}
+		limitAction.id = fmt.Sprintf("%p", limitAction)
+		limitScope := action.LimitOptions.Scope
+		if limitScope == "" {
+			limitScope = defaultLimitScope
+			if limitScope == "" {
+				limitScope = C.LimitScopeSourceIP
+			}
+		}
+		runtime, err := limit.NewRuntime(limit.Options{
+			Scope:          limitScope,
+			Clients:        action.LimitOptions.Clients,
+			DownMbps:       action.LimitOptions.DownMbps,
+			UpMbps:         action.LimitOptions.UpMbps,
+			TotalMbps:      action.LimitOptions.TotalMbps,
+			SamplingPeriod: time.Duration(action.LimitOptions.SamplingPeriod),
+			DownBurstMbps:  action.LimitOptions.DownBurstMbps,
+			UpBurstMbps:    action.LimitOptions.UpBurstMbps,
+			TotalBurstMbps: action.LimitOptions.TotalBurstMbps,
+			RuleID:         limitAction.id,
+		})
+		if err != nil {
+			return nil, err
+		}
+		limitAction.scope = limitScope
+		limitAction.options = action.LimitOptions
+		limitAction.runtime = runtime
+		return limitAction, nil
 	default:
 		panic(F.ToString("unknown rule action: ", action.Action))
 	}
@@ -573,6 +605,47 @@ type RuleActionResolve struct {
 	DisableOptimisticCache bool
 	RewriteTTL             *uint32
 	ClientSubnet           netip.Prefix
+}
+
+type RuleActionLimitOptions struct {
+	id      string
+	scope   string
+	options option.LimitActionOptions
+	runtime *limit.Runtime
+}
+
+func (r *RuleActionLimitOptions) Type() string {
+	return C.RuleActionTypeLimitOptions
+}
+
+func (r *RuleActionLimitOptions) String() string {
+	var options []string
+	options = append(options, F.ToString("scope=", r.scope))
+	if r.options.Clients > 0 {
+		options = append(options, F.ToString("clients=", r.options.Clients))
+	}
+	if r.options.DownMbps != nil {
+		options = append(options, F.ToString("down=", *r.options.DownMbps, "Mbps"))
+	}
+	if r.options.UpMbps != nil {
+		options = append(options, F.ToString("up=", *r.options.UpMbps, "Mbps"))
+	}
+	if r.options.TotalMbps != nil {
+		options = append(options, F.ToString("total=", *r.options.TotalMbps, "Mbps"))
+	}
+	period := time.Duration(r.options.SamplingPeriod)
+	if period > 0 {
+		options = append(options, F.ToString("period=", period.String()))
+	}
+	return F.ToString("limit-options(", strings.Join(options, ","), ")")
+}
+
+func (r *RuleActionLimitOptions) WrapConnection(ctx context.Context, conn net.Conn, metadata *adapter.InboundContext) (net.Conn, error) {
+	return r.runtime.WrapConnection(ctx, conn, metadata)
+}
+
+func (r *RuleActionLimitOptions) WrapPacketConnection(ctx context.Context, conn N.PacketConn, metadata *adapter.InboundContext) (N.PacketConn, error) {
+	return r.runtime.WrapPacketConnection(ctx, conn, metadata)
 }
 
 func (r *RuleActionResolve) Type() string {
