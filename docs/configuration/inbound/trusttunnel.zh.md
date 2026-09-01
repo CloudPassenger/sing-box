@@ -20,7 +20,10 @@ icon: material/new-box
     }
   ],
   "quic_congestion_control": "bbr",
-  "network": ["tcp", "udp"],
+  "network": [
+    "tcp",
+    "udp"
+  ],
   "tls": {}
 }
 ```
