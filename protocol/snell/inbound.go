@@ -10,6 +10,7 @@ import (
 	"github.com/sagernet/sing-box/common/listener"
 	"github.com/sagernet/sing-box/common/speedtest"
 	"github.com/sagernet/sing-box/common/uot"
+	"github.com/sagernet/sing-box/common/usermanager"
 	C "github.com/sagernet/sing-box/constant"
 	"github.com/sagernet/sing-box/log"
 	"github.com/sagernet/sing-box/option"
@@ -18,7 +19,6 @@ import (
 	"github.com/sagernet/sing-snell/snellv6"
 	"github.com/sagernet/sing/common/auth"
 	E "github.com/sagernet/sing/common/exceptions"
-	F "github.com/sagernet/sing/common/format"
 	"github.com/sagernet/sing/common/logger"
 	M "github.com/sagernet/sing/common/metadata"
 	N "github.com/sagernet/sing/common/network"
@@ -32,11 +32,12 @@ var _ adapter.TCPInjectableInbound = (*Inbound)(nil)
 
 type Inbound struct {
 	inbound.Adapter
-	router   adapter.ConnectionRouterEx
-	logger   logger.ContextLogger
-	listener *listener.Listener
-	service  snellprotocol.Service
-	users    []option.SnellUser
+	router       adapter.ConnectionRouterEx
+	logger       logger.ContextLogger
+	listener     *listener.Listener
+	service      snellprotocol.Service
+	multiService snellMultiService
+	userManager  *usermanager.Manager[option.SnellUser]
 }
 
 func NewInbound(ctx context.Context, router adapter.Router, logger log.ContextLogger, tag string, options option.SnellInboundOptions) (adapter.Inbound, error) {
@@ -48,18 +49,11 @@ func NewInbound(ctx context.Context, router adapter.Router, logger log.ContextLo
 		Adapter: inbound.NewAdapter(C.TypeSnell, tag),
 		router:  uot.NewRouter(speedTestRouter, logger),
 		logger:  logger,
-		users:   options.Users,
 	}
-	var userList []int
-	var keyList [][]byte
-	if len(options.Users) > 0 {
-		userList = make([]int, len(options.Users))
-		keyList = make([][]byte, len(options.Users))
-		for index, user := range options.Users {
-			userList[index] = index
-			keyList[index] = []byte(user.UserKey)
-		}
-	}
+	// snell's MultiService authenticates purely from its user map and never falls
+	// back to the top-level PSK, so the multi-user path is only safe when users
+	// exist or managed users are explicitly requested.
+	multiUser := options.Managed || len(options.Users) > 0
 
 	switch options.Version {
 	case 5:
@@ -73,14 +67,14 @@ func NewInbound(ctx context.Context, router adapter.Router, logger log.ContextLo
 			ObfsMode: obfsMode,
 			Handler:  inbound,
 		}
-		if len(options.Users) > 0 {
-			var service *snellv5.MultiService[int]
-			service, err = snellv5.NewMultiService[int](serviceOptions)
+		if multiUser {
+			var service *snellv5.MultiService[adapter.UserID]
+			service, err = snellv5.NewMultiService[adapter.UserID](serviceOptions)
 			if err != nil {
 				return nil, err
 			}
-			err = service.UpdateUsers(userList, keyList)
 			inbound.service = service
+			inbound.multiService = service
 		} else {
 			inbound.service, err = snellv5.NewService(serviceOptions)
 		}
@@ -95,14 +89,14 @@ func NewInbound(ctx context.Context, router adapter.Router, logger log.ContextLo
 			Mode:    mode,
 			Handler: inbound,
 		}
-		if len(options.Users) > 0 {
-			var service *snellv6.MultiService[int]
-			service, err = snellv6.NewMultiService[int](serviceOptions)
+		if multiUser {
+			var service *snellv6.MultiService[adapter.UserID]
+			service, err = snellv6.NewMultiService[adapter.UserID](serviceOptions)
 			if err != nil {
 				return nil, err
 			}
-			err = service.UpdateUsers(userList, keyList)
 			inbound.service = service
+			inbound.multiService = service
 		} else {
 			inbound.service, err = snellv6.NewService(serviceOptions)
 		}
@@ -113,6 +107,11 @@ func NewInbound(ctx context.Context, router adapter.Router, logger log.ContextLo
 	}
 	if err != nil {
 		return nil, err
+	}
+	if inbound.multiService != nil {
+		if err := inbound.initializeUserManager(ctx, options.Users); err != nil {
+			return nil, err
+		}
 	}
 	inbound.listener = listener.New(listener.Options{
 		Context:           ctx,
@@ -172,18 +171,14 @@ func (h *Inbound) NewPacketConnectionEx(ctx context.Context, conn N.PacketConn, 
 func (h *Inbound) newConnection(ctx context.Context, conn net.Conn, metadata adapter.InboundContext, onClose N.CloseHandlerFunc) {
 	metadata.Inbound = h.Tag()
 	metadata.InboundType = h.Type()
-	if len(h.users) > 0 {
-		userIndex, loaded := auth.UserFromContext[int](ctx)
+	if h.multiService != nil {
+		userID, loaded := auth.UserFromContext[adapter.UserID](ctx)
 		if !loaded {
 			N.CloseOnHandshakeFailure(conn, onClose, os.ErrInvalid)
 			return
 		}
-		user := h.users[userIndex].Name
-		if user == "" {
-			user = F.ToString(userIndex)
-		} else {
-			metadata.User = user
-		}
+		user := string(userID)
+		metadata.User = user
 		h.logger.InfoContext(ctx, "[", user, "] inbound connection to ", metadata.Destination)
 	} else {
 		h.logger.InfoContext(ctx, "inbound connection to ", metadata.Destination)
@@ -196,18 +191,14 @@ func (h *Inbound) newPacketConnection(ctx context.Context, conn N.PacketConn, me
 	metadata.InboundType = h.Type()
 	// The snell client in Surge rejects UDP responses with domain addresses.
 	metadata.UDPDisableDomainUnmapping = true
-	if len(h.users) > 0 {
-		userIndex, loaded := auth.UserFromContext[int](ctx)
+	if h.multiService != nil {
+		userID, loaded := auth.UserFromContext[adapter.UserID](ctx)
 		if !loaded {
 			N.CloseOnHandshakeFailure(conn, onClose, os.ErrInvalid)
 			return
 		}
-		user := h.users[userIndex].Name
-		if user == "" {
-			user = F.ToString(userIndex)
-		} else {
-			metadata.User = user
-		}
+		user := string(userID)
+		metadata.User = user
 		h.logger.InfoContext(ctx, "[", user, "] inbound packet connection from ", metadata.Source)
 	} else {
 		h.logger.InfoContext(ctx, "inbound packet connection from ", metadata.Source)

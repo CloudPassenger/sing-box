@@ -12,6 +12,7 @@ import (
 	"github.com/sagernet/sing-box/common/mux"
 	"github.com/sagernet/sing-box/common/speedtest"
 	"github.com/sagernet/sing-box/common/uot"
+	"github.com/sagernet/sing-box/common/usermanager"
 	C "github.com/sagernet/sing-box/constant"
 	"github.com/sagernet/sing-box/log"
 	"github.com/sagernet/sing-box/option"
@@ -22,7 +23,6 @@ import (
 	"github.com/sagernet/sing/common/auth"
 	"github.com/sagernet/sing/common/buf"
 	E "github.com/sagernet/sing/common/exceptions"
-	F "github.com/sagernet/sing/common/format"
 	"github.com/sagernet/sing/common/logger"
 	M "github.com/sagernet/sing/common/metadata"
 	N "github.com/sagernet/sing/common/network"
@@ -32,83 +32,168 @@ import (
 var (
 	_ adapter.TCPInjectableInbound = (*MultiInbound)(nil)
 	_ adapter.ManagedSSMServer     = (*MultiInbound)(nil)
+	_ adapter.TCPInjectableInbound = (*legacyMultiInbound)(nil)
 )
 
 type MultiInbound struct {
 	inbound.Adapter
-	ctx      context.Context
-	router   adapter.ConnectionRouterEx
-	logger   logger.ContextLogger
-	listener *listener.Listener
-	service  shadowsocks.MultiService[int]
-	users    []option.ShadowsocksUser
-	tracker  adapter.SSMTracker
+	ctx                 context.Context
+	router              adapter.ConnectionRouterEx
+	logger              logger.ContextLogger
+	listener            *listener.Listener
+	service             shadowsocks.MultiService[adapter.UserID]
+	userManager         *usermanager.Manager[option.ShadowsocksUser]
+	userState           *shadowsocksUserState
+	unmanagedUserLabels map[adapter.UserID]string
+	tracker             adapter.SSMTracker
 }
 
-func newMultiInbound(ctx context.Context, router adapter.Router, logger log.ContextLogger, tag string, options option.ShadowsocksInboundOptions) (*MultiInbound, error) {
+// legacyMultiInbound deliberately withholds managed-user and SSM capabilities from the unchanged
+// single unnamed configured-user legacy path.
+type legacyMultiInbound MultiInbound
+
+func newMultiInbound(
+	ctx context.Context,
+	router adapter.Router,
+	logger log.ContextLogger,
+	tag string,
+	options option.ShadowsocksInboundOptions,
+) (adapter.Inbound, error) {
+	managedMethod := options.Method == "2022-blake3-aes-128-gcm" ||
+		options.Method == "2022-blake3-aes-256-gcm"
+	legacyMethod := common.Contains(shadowaead.List, options.Method)
+	legacyManaged := legacyMethod && (options.Managed || len(options.Users) > 1 ||
+		(len(options.Users) == 1 && options.Users[0].Name != ""))
+	if common.Contains(shadowaead_2022.List, options.Method) && !managedMethod {
+		return nil, E.New(
+			"Shadowsocks 2022 multi-user is unsupported for method \"",
+			options.Method,
+			"\"; use 2022-blake3-aes-128-gcm or 2022-blake3-aes-256-gcm",
+		)
+	}
+	if !managedMethod && !legacyMethod {
+		return nil, E.New("unsupported method: " + options.Method)
+	}
+
 	speedTestRouter, err := speedtest.NewRouter(router, logger, options.SpeedTest)
 	if err != nil {
 		return nil, err
 	}
-	inbound := &MultiInbound{
+	multiInbound := &MultiInbound{
 		Adapter: inbound.NewAdapter(C.TypeShadowsocks, tag),
 		ctx:     ctx,
 		router:  uot.NewRouter(speedTestRouter, logger),
 		logger:  logger,
 	}
-	inbound.router, err = mux.NewRouterWithOptions(inbound.router, logger, common.PtrValueOrDefault(options.Multiplex))
+	multiInbound.router, err = mux.NewRouterWithOptions(
+		multiInbound.router,
+		logger,
+		common.PtrValueOrDefault(options.Multiplex),
+	)
 	if err != nil {
 		return nil, err
 	}
-	var udpTimeout time.Duration
+	udpTimeout := C.UDPTimeout
 	if options.UDPTimeout != 0 {
 		udpTimeout = time.Duration(options.UDPTimeout)
-	} else {
-		udpTimeout = C.UDPTimeout
 	}
-	var service shadowsocks.MultiService[int]
-	if common.Contains(shadowaead_2022.List, options.Method) {
-		service, err = shadowaead_2022.NewMultiServiceWithPassword[int](
+
+	if managedMethod {
+		service, serviceErr := shadowaead_2022.NewMultiServiceWithPassword[adapter.UserID](
 			options.Method,
 			options.Password,
 			int64(udpTimeout.Seconds()),
-			adapter.NewLegacyUpstreamHandler(adapter.InboundContext{}, inbound.newConnection, inbound.newPacketConnection, inbound),
+			adapter.NewLegacyUpstreamHandler(
+				adapter.InboundContext{},
+				multiInbound.newConnection,
+				multiInbound.newPacketConnection,
+				multiInbound,
+			),
 			ntp.TimeFuncFromContext(ctx),
 		)
-	} else if common.Contains(shadowaead.List, options.Method) {
-		service, err = shadowaead.NewMultiService[int](
+		if serviceErr != nil {
+			return nil, serviceErr
+		}
+		multiInbound.service = service
+		if err := multiInbound.initialize2022UserManager(ctx, options.Method, service, options.Users); err != nil {
+			return nil, err
+		}
+		multiInbound.listener = listener.New(listener.Options{
+			Context:                  ctx,
+			Logger:                   logger,
+			Network:                  options.Network.Build(),
+			Listen:                   options.ListenOptions,
+			ConnectionHandler:        multiInbound,
+			PacketHandler:            multiInbound,
+			ThreadUnsafePacketWriter: true,
+		})
+		return multiInbound, nil
+	}
+
+	if legacyManaged {
+		service, serviceErr := shadowaead.NewMultiService[adapter.UserID](
 			options.Method,
 			int64(udpTimeout.Seconds()),
-			adapter.NewLegacyUpstreamHandler(adapter.InboundContext{}, inbound.newConnection, inbound.newPacketConnection, inbound),
+			adapter.NewLegacyUpstreamHandler(
+				adapter.InboundContext{},
+				multiInbound.newConnection,
+				multiInbound.newPacketConnection,
+				multiInbound,
+			),
 		)
-	} else {
-		return nil, E.New("unsupported method: " + options.Method)
+		if serviceErr != nil {
+			return nil, serviceErr
+		}
+		multiInbound.service = service
+		if err := multiInbound.initializeLegacyUserManager(ctx, service, options.Users); err != nil {
+			return nil, err
+		}
+		multiInbound.listener = listener.New(listener.Options{
+			Context:                  ctx,
+			Logger:                   logger,
+			Network:                  options.Network.Build(),
+			Listen:                   options.ListenOptions,
+			ConnectionHandler:        multiInbound,
+			PacketHandler:            multiInbound,
+			ThreadUnsafePacketWriter: true,
+		})
+		return multiInbound, nil
 	}
+
+	legacyInbound := (*legacyMultiInbound)(multiInbound)
+	service, err := shadowaead.NewMultiService[adapter.UserID](
+		options.Method,
+		int64(udpTimeout.Seconds()),
+		adapter.NewLegacyUpstreamHandler(
+			adapter.InboundContext{},
+			legacyInbound.newConnection,
+			legacyInbound.newPacketConnection,
+			legacyInbound,
+		),
+	)
 	if err != nil {
 		return nil, err
 	}
-	if len(options.Users) > 0 {
-		err = service.UpdateUsersWithPasswords(common.MapIndexed(options.Users, func(index int, user option.ShadowsocksUser) int {
-			return index
-		}), common.Map(options.Users, func(user option.ShadowsocksUser) string {
-			return user.Password
-		}))
-		if err != nil {
-			return nil, err
-		}
+	user := options.Users[0]
+	userID := adapter.UserID(user.Name)
+	if userID == "" {
+		userID = shadowsocksStaticUserID(0)
+		multiInbound.unmanagedUserLabels = map[adapter.UserID]string{userID: "0"}
 	}
-	inbound.service = service
-	inbound.users = options.Users
-	inbound.listener = listener.New(listener.Options{
+	if err := service.UpdateUsersWithPasswords([]adapter.UserID{userID}, []string{user.Password}); err != nil {
+		return nil, err
+	}
+	multiInbound.service = service
+	multiInbound.listener = listener.New(listener.Options{
 		Context:                  ctx,
 		Logger:                   logger,
 		Network:                  options.Network.Build(),
 		Listen:                   options.ListenOptions,
-		ConnectionHandler:        inbound,
-		PacketHandler:            inbound,
+		ConnectionHandler:        legacyInbound,
+		PacketHandler:            legacyInbound,
 		ThreadUnsafePacketWriter: true,
 	})
-	return inbound, err
+	return legacyInbound, nil
 }
 
 func (h *MultiInbound) Start(stage adapter.StartStage) error {
@@ -127,18 +212,7 @@ func (h *MultiInbound) SetTracker(tracker adapter.SSMTracker) {
 }
 
 func (h *MultiInbound) UpdateUsers(users []string, uPSKs []string) error {
-	err := h.service.UpdateUsersWithPasswords(common.MapIndexed(users, func(index int, user string) int {
-		return index
-	}), uPSKs)
-	if err != nil {
-		return err
-	}
-	h.users = common.Map(users, func(user string) option.ShadowsocksUser {
-		return option.ShadowsocksUser{
-			Name: user,
-		}
-	})
-	return nil
+	return h.replaceSSMUsers(users, uPSKs)
 }
 
 //nolint:staticcheck
@@ -163,14 +237,12 @@ func (h *MultiInbound) NewPacket(buffer *buf.Buffer, source M.Socksaddr) {
 }
 
 func (h *MultiInbound) newConnection(ctx context.Context, conn net.Conn, metadata adapter.InboundContext) error {
-	userIndex, loaded := auth.UserFromContext[int](ctx)
+	userID, loaded := auth.UserFromContext[adapter.UserID](ctx)
 	if !loaded {
 		return os.ErrInvalid
 	}
-	user := h.users[userIndex].Name
-	if user == "" {
-		user = F.ToString(userIndex)
-	} else {
+	user, managed := h.resolveUserID(userID)
+	if managed {
 		metadata.User = user
 	}
 	h.logger.InfoContext(ctx, "[", user, "] inbound connection to ", metadata.Destination)
@@ -186,14 +258,12 @@ func (h *MultiInbound) newConnection(ctx context.Context, conn net.Conn, metadat
 }
 
 func (h *MultiInbound) newPacketConnection(ctx context.Context, conn N.PacketConn, metadata adapter.InboundContext) error {
-	userIndex, loaded := auth.UserFromContext[int](ctx)
+	userID, loaded := auth.UserFromContext[adapter.UserID](ctx)
 	if !loaded {
 		return os.ErrInvalid
 	}
-	user := h.users[userIndex].Name
-	if user == "" {
-		user = F.ToString(userIndex)
-	} else {
+	user, managed := h.resolveUserID(userID)
+	if managed {
 		metadata.User = user
 	}
 	ctx = log.ContextWithNewID(ctx)
@@ -213,4 +283,48 @@ func (h *MultiInbound) newPacketConnection(ctx context.Context, conn N.PacketCon
 //nolint:staticcheck
 func (h *MultiInbound) NewError(ctx context.Context, err error) {
 	NewError(h.logger, ctx, err)
+}
+
+func (h *legacyMultiInbound) Start(stage adapter.StartStage) error {
+	return (*MultiInbound)(h).Start(stage)
+}
+
+func (h *legacyMultiInbound) Close() error {
+	return (*MultiInbound)(h).Close()
+}
+
+//nolint:staticcheck
+func (h *legacyMultiInbound) NewConnection(
+	ctx context.Context,
+	conn net.Conn,
+	metadata adapter.InboundContext,
+	onClose N.CloseHandlerFunc,
+) {
+	(*MultiInbound)(h).NewConnection(ctx, conn, metadata, onClose)
+}
+
+//nolint:staticcheck
+func (h *legacyMultiInbound) NewPacket(buffer *buf.Buffer, source M.Socksaddr) {
+	(*MultiInbound)(h).NewPacket(buffer, source)
+}
+
+func (h *legacyMultiInbound) newConnection(
+	ctx context.Context,
+	conn net.Conn,
+	metadata adapter.InboundContext,
+) error {
+	return (*MultiInbound)(h).newConnection(ctx, conn, metadata)
+}
+
+func (h *legacyMultiInbound) newPacketConnection(
+	ctx context.Context,
+	conn N.PacketConn,
+	metadata adapter.InboundContext,
+) error {
+	return (*MultiInbound)(h).newPacketConnection(ctx, conn, metadata)
+}
+
+//nolint:staticcheck
+func (h *legacyMultiInbound) NewError(ctx context.Context, err error) {
+	(*MultiInbound)(h).NewError(ctx, err)
 }

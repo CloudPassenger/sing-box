@@ -11,6 +11,7 @@ import (
 	"github.com/sagernet/sing-box/common/speedtest"
 	"github.com/sagernet/sing-box/common/tls"
 	"github.com/sagernet/sing-box/common/uot"
+	"github.com/sagernet/sing-box/common/usermanager"
 	C "github.com/sagernet/sing-box/constant"
 	"github.com/sagernet/sing-box/log"
 	"github.com/sagernet/sing-box/option"
@@ -18,11 +19,8 @@ import (
 	"github.com/sagernet/sing-quic/tuic"
 	"github.com/sagernet/sing/common"
 	"github.com/sagernet/sing/common/auth"
-	E "github.com/sagernet/sing/common/exceptions"
 	M "github.com/sagernet/sing/common/metadata"
 	N "github.com/sagernet/sing/common/network"
-
-	"github.com/gofrs/uuid/v5"
 )
 
 func RegisterInbound(registry *inbound.Registry) {
@@ -31,12 +29,12 @@ func RegisterInbound(registry *inbound.Registry) {
 
 type Inbound struct {
 	inbound.Adapter
-	router       adapter.ConnectionRouterEx
-	logger       log.ContextLogger
-	listener     *listener.Listener
-	tlsConfig    tls.ServerConfig
-	server       *tuic.Service[int]
-	userNameList []string
+	router      adapter.ConnectionRouterEx
+	logger      log.ContextLogger
+	listener    *listener.Listener
+	tlsConfig   tls.ServerConfig
+	server      *tuic.Service[adapter.UserID]
+	userManager *usermanager.Manager[option.TUICUser]
 }
 
 func NewInbound(ctx context.Context, router adapter.Router, logger log.ContextLogger, tag string, options option.TUICInboundOptions) (adapter.Inbound, error) {
@@ -69,7 +67,7 @@ func NewInbound(ctx context.Context, router adapter.Router, logger log.ContextLo
 	} else {
 		udpTimeout = C.UDPTimeout
 	}
-	service, err := tuic.NewService[int](tuic.ServiceOptions{
+	service, err := tuic.NewService[adapter.UserID](tuic.ServiceOptions{
 		Context:   ctx,
 		Logger:    logger,
 		TLSConfig: tlsConfig,
@@ -92,26 +90,10 @@ func NewInbound(ctx context.Context, router adapter.Router, logger log.ContextLo
 	if err != nil {
 		return nil, err
 	}
-	var userList []int
-	var userNameList []string
-	var userUUIDList [][16]byte
-	var userPasswordList []string
-	for index, user := range options.Users {
-		if user.UUID == "" {
-			return nil, E.New("missing uuid for user ", index)
-		}
-		userUUID, err := uuid.FromString(user.UUID)
-		if err != nil {
-			return nil, E.Cause(err, "invalid uuid for user ", index)
-		}
-		userList = append(userList, index)
-		userNameList = append(userNameList, user.Name)
-		userUUIDList = append(userUUIDList, userUUID)
-		userPasswordList = append(userPasswordList, user.Password)
-	}
-	service.UpdateUsers(userList, userUUIDList, userPasswordList)
 	inbound.server = service
-	inbound.userNameList = userNameList
+	if err := inbound.initializeUserManager(ctx, options.Users); err != nil {
+		return nil, err
+	}
 	return inbound, nil
 }
 
@@ -127,10 +109,10 @@ func (h *Inbound) NewConnectionEx(ctx context.Context, conn net.Conn, source M.S
 	metadata.Source = source
 	metadata.Destination = destination
 	h.logger.InfoContext(ctx, "inbound connection from ", metadata.Source)
-	userID, _ := auth.UserFromContext[int](ctx)
-	if userName := h.userNameList[userID]; userName != "" {
-		metadata.User = userName
-		h.logger.InfoContext(ctx, "[", userName, "] inbound connection to ", metadata.Destination)
+	userID, _ := auth.UserFromContext[adapter.UserID](ctx)
+	if userID != "" {
+		metadata.User = string(userID)
+		h.logger.InfoContext(ctx, "[", userID, "] inbound connection to ", metadata.Destination)
 	} else {
 		h.logger.InfoContext(ctx, "inbound connection to ", metadata.Destination)
 	}
@@ -149,10 +131,10 @@ func (h *Inbound) NewPacketConnectionEx(ctx context.Context, conn N.PacketConn, 
 	metadata.Source = source
 	metadata.Destination = destination
 	h.logger.InfoContext(ctx, "inbound packet connection from ", metadata.Source)
-	userID, _ := auth.UserFromContext[int](ctx)
-	if userName := h.userNameList[userID]; userName != "" {
-		metadata.User = userName
-		h.logger.InfoContext(ctx, "[", userName, "] inbound packet connection to ", metadata.Destination)
+	userID, _ := auth.UserFromContext[adapter.UserID](ctx)
+	if userID != "" {
+		metadata.User = string(userID)
+		h.logger.InfoContext(ctx, "[", userID, "] inbound packet connection to ", metadata.Destination)
 	} else {
 		h.logger.InfoContext(ctx, "inbound packet connection to ", metadata.Destination)
 	}

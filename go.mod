@@ -190,7 +190,7 @@ require (
 	go.uber.org/zap/exp v0.3.0 // indirect
 	go4.org/mem v0.0.0-20240501181205-ae6ca9944745 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
-	golang.org/x/time v0.15.0 // indirect
+	golang.org/x/time v0.15.0
 	golang.org/x/tools v0.47.0 // indirect
 	golang.zx2c4.com/wintun v0.0.0-20230126152724-0fa3db229ce2 // indirect
 	golang.zx2c4.com/wireguard/windows v0.5.3 // indirect
@@ -200,4 +200,12 @@ require (
 	zombiezen.com/go/capnproto2 v2.18.2+incompatible // indirect
 )
 
-replace github.com/sagernet/sing-vmess v0.2.8-0.20250909125414-3aed155119a1 => github.com/CloudPassenger/sing-vmess v0.2.8-0.20260728153648-7a5263c133f8
+replace github.com/anytls/sing-anytls => github.com/CloudPassenger/sing-anytls v0.0.0-20260728161219-160ca3c98e71
+
+replace github.com/sagernet/sing-vmess v0.2.8-0.20250909125414-3aed155119a1 => github.com/CloudPassenger/sing-vmess v0.2.8-0.20260824172859-f99ab5be7208
+
+replace github.com/sagernet/sing-quic => github.com/CloudPassenger/sing-quic v0.0.0-20260901111850-e376795aca6d
+
+replace github.com/sagernet/sing-shadowsocks => github.com/CloudPassenger/sing-shadowsocks v0.0.0-20260824172859-8c878f71297f
+
+replace github.com/sagernet/sing-snell => github.com/CloudPassenger/sing-snell v0.0.0-20260901111744-e9873093e533
