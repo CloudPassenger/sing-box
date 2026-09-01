@@ -16,7 +16,7 @@ import (
 )
 
 type _RuleAction struct {
-	Action              string                    `json:"action,omitempty" enum:"route,route-options,direct,bypass,reject,hijack-dns,sniff,resolve"`
+	Action              string                    `json:"action,omitempty" enum:"route,route-options,direct,bypass,pass,reject,hijack-dns,sniff,resolve"`
 	RouteOptions        RouteActionOptions        `json:"-"`
 	RouteOptionsOptions RouteOptionsActionOptions `json:"-"`
 	DirectOptions       DirectActionOptions       `json:"-"`
@@ -44,6 +44,8 @@ func (r RuleAction) MarshalJSON() ([]byte, error) {
 		v = r.DirectOptions
 	case C.RuleActionTypeBypass:
 		v = r.BypassOptions
+	case C.RuleActionTypePass:
+		v = nil
 	case C.RuleActionTypeReject:
 		v = r.RejectOptions
 	case C.RuleActionTypeHijackDNS:
@@ -79,6 +81,8 @@ func (r *RuleAction) UnmarshalJSON(data []byte) error {
 		v = &r.DirectOptions
 	case C.RuleActionTypeBypass:
 		v = &r.BypassOptions
+	case C.RuleActionTypePass:
+		v = nil
 	case C.RuleActionTypeReject:
 		v = &r.RejectOptions
 	case C.RuleActionTypeHijackDNS:
@@ -104,7 +108,7 @@ func (r *RuleAction) UnmarshalJSON(data []byte) error {
 }
 
 type _DNSRuleAction struct {
-	Action              string                       `json:"action,omitempty" enum:"route,evaluate,respond,route-options,reject,predefined"`
+	Action              string                       `json:"action,omitempty" enum:"route,evaluate,respond,route-options,pass,reject,predefined"`
 	Race                bool                         `json:"race,omitempty"`
 	RouteOptions        DNSRouteActionOptions        `json:"-"`
 	EvaluateOptions     DNSEvaluateActionOptions     `json:"-"`
@@ -127,6 +131,8 @@ func (r DNSRuleAction) MarshalJSON() ([]byte, error) {
 	case C.RuleActionTypeEvaluate:
 		v = r.EvaluateOptions
 	case C.RuleActionTypeRespond:
+		v = nil
+	case C.RuleActionTypePass:
 		v = nil
 	case C.RuleActionTypeRouteOptions:
 		v = r.RouteOptionsOptions
@@ -156,6 +162,8 @@ func (r *DNSRuleAction) UnmarshalJSONContext(ctx context.Context, data []byte) e
 	case C.RuleActionTypeEvaluate:
 		v = &r.EvaluateOptions
 	case C.RuleActionTypeRespond:
+		v = nil
+	case C.RuleActionTypePass:
 		v = nil
 	case C.RuleActionTypeRouteOptions:
 		v = &r.RouteOptionsOptions
@@ -470,6 +478,7 @@ func routeActionUnion(builder schema.Builder) (*schema.Node, error) {
 		{action: C.RuleActionTypeRouteOptions, structType: reflect.TypeFor[RawRouteOptionsActionOptions]()},
 		{action: C.RuleActionTypeDirect, structType: reflect.TypeFor[DirectActionOptions]()},
 		{action: C.RuleActionTypeBypass, structType: reflect.TypeFor[RouteActionOptions]()},
+		{action: C.RuleActionTypePass},
 		{action: C.RuleActionTypeReject, build: rejectProperties},
 		{action: C.RuleActionTypeHijackDNS},
 		{action: C.RuleActionTypeSniff, structType: reflect.TypeFor[RouteActionSniff]()},
@@ -497,5 +506,6 @@ func dnsActionUnion(builder schema.Builder) (*schema.Node, error) {
 		{action: C.RuleActionTypeRouteOptions, structType: reflect.TypeFor[DNSRouteOptionsActionOptions](), build: raceProperty},
 		{action: C.RuleActionTypeReject, build: rejectWithRace},
 		{action: C.RuleActionTypePredefined, structType: reflect.TypeFor[DNSRouteActionPredefined](), build: raceProperty},
+		{action: C.RuleActionTypePass, build: raceProperty},
 	})
 }

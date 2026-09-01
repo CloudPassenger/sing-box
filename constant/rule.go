@@ -36,6 +36,7 @@ const (
 	RuleActionTypeRespond      = "respond"
 	RuleActionTypeDirect       = "direct"
 	RuleActionTypeBypass       = "bypass"
+	RuleActionTypePass         = "pass"
 	RuleActionTypeReject       = "reject"
 	RuleActionTypeHijackDNS    = "hijack-dns"
 	RuleActionTypeSniff        = "sniff"
