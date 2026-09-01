@@ -828,6 +828,21 @@
         },
         "fallback_delay": {
           "$ref": "#/$defs/Duration"
+        },
+        "proxy_protocol": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "integer",
+              "enum": [
+                0,
+                1,
+                2
+              ]
+            }
+          ]
         }
       },
       "additionalProperties": false
@@ -1875,6 +1890,20 @@
           "required": [
             "action"
           ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "action": {
+              "const": "pass"
+            },
+            "race": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "action"
+          ]
         }
       ]
     },
@@ -1987,6 +2016,21 @@
             },
             "fallback_delay": {
               "$ref": "#/$defs/Duration"
+            },
+            "proxy_protocol": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "integer",
+                  "enum": [
+                    0,
+                    1,
+                    2
+                  ]
+                }
+              ]
             },
             "prefer_go": {
               "type": "boolean"
@@ -2147,6 +2191,21 @@
             },
             "fallback_delay": {
               "$ref": "#/$defs/Duration"
+            },
+            "proxy_protocol": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "integer",
+                  "enum": [
+                    0,
+                    1,
+                    2
+                  ]
+                }
+              ]
             },
             "server": {
               "type": "string"
@@ -2326,6 +2385,21 @@
             "fallback_delay": {
               "$ref": "#/$defs/Duration"
             },
+            "proxy_protocol": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "integer",
+                  "enum": [
+                    0,
+                    1,
+                    2
+                  ]
+                }
+              ]
+            },
             "server": {
               "type": "string"
             },
@@ -2460,6 +2534,21 @@
             "fallback_delay": {
               "$ref": "#/$defs/Duration"
             },
+            "proxy_protocol": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "integer",
+                  "enum": [
+                    0,
+                    1,
+                    2
+                  ]
+                }
+              ]
+            },
             "prefer_go": {
               "type": "boolean"
             },
@@ -2589,6 +2678,21 @@
             },
             "fallback_delay": {
               "$ref": "#/$defs/Duration"
+            },
+            "proxy_protocol": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "integer",
+                  "enum": [
+                    0,
+                    1,
+                    2
+                  ]
+                }
+              ]
             },
             "prefer_go": {
               "type": "boolean"
@@ -2781,6 +2885,21 @@
             "fallback_delay": {
               "$ref": "#/$defs/Duration"
             },
+            "proxy_protocol": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "integer",
+                  "enum": [
+                    0,
+                    1,
+                    2
+                  ]
+                }
+              ]
+            },
             "server": {
               "type": "string"
             },
@@ -2951,6 +3070,21 @@
             "fallback_delay": {
               "$ref": "#/$defs/Duration"
             },
+            "proxy_protocol": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "integer",
+                  "enum": [
+                    0,
+                    1,
+                    2
+                  ]
+                }
+              ]
+            },
             "server": {
               "type": "string"
             },
@@ -3072,6 +3206,21 @@
             },
             "fallback_delay": {
               "$ref": "#/$defs/Duration"
+            },
+            "proxy_protocol": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "integer",
+                  "enum": [
+                    0,
+                    1,
+                    2
+                  ]
+                }
+              ]
             },
             "server": {
               "type": "string"
@@ -3197,6 +3346,21 @@
             },
             "fallback_delay": {
               "$ref": "#/$defs/Duration"
+            },
+            "proxy_protocol": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "integer",
+                  "enum": [
+                    0,
+                    1,
+                    2
+                  ]
+                }
+              ]
             },
             "server": {
               "type": "string"
@@ -3353,6 +3517,21 @@
         },
         "fallback_delay": {
           "$ref": "#/$defs/Duration"
+        },
+        "proxy_protocol": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "integer",
+              "enum": [
+                0,
+                1,
+                2
+              ]
+            }
+          ]
         }
       },
       "additionalProperties": false
@@ -3522,6 +3701,21 @@
             },
             "fallback_delay": {
               "$ref": "#/$defs/Duration"
+            },
+            "proxy_protocol": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "integer",
+                  "enum": [
+                    0,
+                    1,
+                    2
+                  ]
+                }
+              ]
             },
             "system": {
               "type": "boolean"
@@ -3799,6 +3993,21 @@
             },
             "fallback_delay": {
               "$ref": "#/$defs/Duration"
+            },
+            "proxy_protocol": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "integer",
+                  "enum": [
+                    0,
+                    1,
+                    2
+                  ]
+                }
+              ]
             },
             "server": {
               "type": "string"
@@ -4182,6 +4391,12 @@
               "type": "string",
               "x-tag-reference": "inbound"
             },
+            "proxy_protocol": {
+              "type": "boolean"
+            },
+            "proxy_protocol_accept_no_header": {
+              "type": "boolean"
+            },
             "system": {
               "type": "boolean"
             },
@@ -4488,6 +4703,21 @@
             "fallback_delay": {
               "$ref": "#/$defs/Duration"
             },
+            "proxy_protocol": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "integer",
+                  "enum": [
+                    0,
+                    1,
+                    2
+                  ]
+                }
+              ]
+            },
             "state_directory": {
               "type": "string"
             },
@@ -4772,6 +5002,21 @@
             },
             "fallback_delay": {
               "$ref": "#/$defs/Duration"
+            },
+            "proxy_protocol": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "integer",
+                  "enum": [
+                    0,
+                    1,
+                    2
+                  ]
+                }
+              ]
             }
           },
           "required": [
@@ -4928,6 +5173,21 @@
         },
         "fallback_delay": {
           "$ref": "#/$defs/Duration"
+        },
+        "proxy_protocol": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "integer",
+              "enum": [
+                0,
+                1,
+                2
+              ]
+            }
+          ]
         },
         "idle_timeout": {
           "$ref": "#/$defs/Duration"
@@ -5101,6 +5361,21 @@
             },
             "fallback_delay": {
               "$ref": "#/$defs/Duration"
+            },
+            "proxy_protocol": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "integer",
+                  "enum": [
+                    0,
+                    1,
+                    2
+                  ]
+                }
+              ]
             },
             "idle_timeout": {
               "$ref": "#/$defs/Duration"
@@ -5791,6 +6066,12 @@
               "type": "string",
               "x-tag-reference": "inbound"
             },
+            "proxy_protocol": {
+              "type": "boolean"
+            },
+            "proxy_protocol_accept_no_header": {
+              "type": "boolean"
+            },
             "tls": {
               "$ref": "#/$defs/InboundTLSOptions"
             },
@@ -5812,6 +6093,9 @@
                   }
                 }
               ]
+            },
+            "speed_test": {
+              "type": "string"
             }
           },
           "required": [
@@ -5943,6 +6227,12 @@
               "type": "string",
               "x-tag-reference": "inbound"
             },
+            "proxy_protocol": {
+              "type": "boolean"
+            },
+            "proxy_protocol_accept_no_header": {
+              "type": "boolean"
+            },
             "network": {
               "anyOf": [
                 {
@@ -6042,6 +6332,12 @@
               "type": "string",
               "x-tag-reference": "inbound"
             },
+            "proxy_protocol": {
+              "type": "boolean"
+            },
+            "proxy_protocol_accept_no_header": {
+              "type": "boolean"
+            },
             "users": {
               "type": "array",
               "items": {
@@ -6056,6 +6352,9 @@
             },
             "tls": {
               "$ref": "#/$defs/InboundTLSOptions"
+            },
+            "speed_test": {
+              "type": "string"
             }
           },
           "required": [
@@ -6126,6 +6425,12 @@
             "detour": {
               "type": "string",
               "x-tag-reference": "inbound"
+            },
+            "proxy_protocol": {
+              "type": "boolean"
+            },
+            "proxy_protocol_accept_no_header": {
+              "type": "boolean"
             },
             "up": {
               "anyOf": [
@@ -6203,6 +6508,9 @@
             },
             "disable_path_mtu_discovery": {
               "type": "boolean"
+            },
+            "speed_test": {
+              "type": "string"
             }
           },
           "required": [
@@ -6273,6 +6581,12 @@
             "detour": {
               "type": "string",
               "x-tag-reference": "inbound"
+            },
+            "proxy_protocol": {
+              "type": "boolean"
+            },
+            "proxy_protocol_accept_no_header": {
+              "type": "boolean"
             },
             "up_mbps": {
               "type": "integer"
@@ -6447,6 +6761,9 @@
             },
             "realm": {
               "$ref": "#/$defs/Hysteria2InboundRealm"
+            },
+            "speed_test": {
+              "type": "string"
             }
           },
           "required": [
@@ -6518,6 +6835,12 @@
               "type": "string",
               "x-tag-reference": "inbound"
             },
+            "proxy_protocol": {
+              "type": "boolean"
+            },
+            "proxy_protocol_accept_no_header": {
+              "type": "boolean"
+            },
             "users": {
               "type": "array",
               "items": {
@@ -6532,6 +6855,9 @@
             },
             "tls": {
               "$ref": "#/$defs/InboundTLSOptions"
+            },
+            "speed_test": {
+              "type": "string"
             }
           },
           "required": [
@@ -6603,6 +6929,12 @@
               "type": "string",
               "x-tag-reference": "inbound"
             },
+            "proxy_protocol": {
+              "type": "boolean"
+            },
+            "proxy_protocol_accept_no_header": {
+              "type": "boolean"
+            },
             "users": {
               "type": "array",
               "items": {
@@ -6640,6 +6972,9 @@
             },
             "tls": {
               "$ref": "#/$defs/InboundTLSOptions"
+            },
+            "speed_test": {
+              "type": "string"
             }
           },
           "required": [
@@ -6710,6 +7045,12 @@
             "detour": {
               "type": "string",
               "x-tag-reference": "inbound"
+            },
+            "proxy_protocol": {
+              "type": "boolean"
+            },
+            "proxy_protocol_accept_no_header": {
+              "type": "boolean"
             }
           },
           "required": [
@@ -6781,6 +7122,12 @@
               "type": "string",
               "x-tag-reference": "inbound"
             },
+            "proxy_protocol": {
+              "type": "boolean"
+            },
+            "proxy_protocol_accept_no_header": {
+              "type": "boolean"
+            },
             "network": {
               "anyOf": [
                 {
@@ -6836,6 +7183,9 @@
             },
             "managed": {
               "type": "boolean"
+            },
+            "speed_test": {
+              "type": "string"
             }
           },
           "required": [
@@ -6906,6 +7256,12 @@
             "detour": {
               "type": "string",
               "x-tag-reference": "inbound"
+            },
+            "proxy_protocol": {
+              "type": "boolean"
+            },
+            "proxy_protocol_accept_no_header": {
+              "type": "boolean"
             },
             "version": {
               "type": "integer",
@@ -7020,6 +7376,12 @@
                   "type": "string",
                   "x-tag-reference": "inbound"
                 },
+                "proxy_protocol": {
+                  "type": "boolean"
+                },
+                "proxy_protocol_accept_no_header": {
+                  "type": "boolean"
+                },
                 "psk": {
                   "type": "string"
                 },
@@ -7028,6 +7390,12 @@
                   "items": {
                     "$ref": "#/$defs/SnellUser"
                   }
+                },
+                "managed": {
+                  "type": "boolean"
+                },
+                "speed_test": {
+                  "type": "string"
                 },
                 "obfs_mode": {
                   "type": "string",
@@ -7111,6 +7479,12 @@
                   "type": "string",
                   "x-tag-reference": "inbound"
                 },
+                "proxy_protocol": {
+                  "type": "boolean"
+                },
+                "proxy_protocol_accept_no_header": {
+                  "type": "boolean"
+                },
                 "psk": {
                   "type": "string"
                 },
@@ -7119,6 +7493,12 @@
                   "items": {
                     "$ref": "#/$defs/SnellUser"
                   }
+                },
+                "managed": {
+                  "type": "boolean"
+                },
+                "speed_test": {
+                  "type": "string"
                 },
                 "mode": {
                   "type": "string",
@@ -7201,6 +7581,12 @@
               "type": "string",
               "x-tag-reference": "inbound"
             },
+            "proxy_protocol": {
+              "type": "boolean"
+            },
+            "proxy_protocol_accept_no_header": {
+              "type": "boolean"
+            },
             "users": {
               "type": "array",
               "items": {
@@ -7209,6 +7595,9 @@
             },
             "domain_resolver": {
               "$ref": "#/$defs/DomainResolver"
+            },
+            "speed_test": {
+              "type": "string"
             }
           },
           "required": [
@@ -7279,6 +7668,12 @@
             "detour": {
               "type": "string",
               "x-tag-reference": "inbound"
+            },
+            "proxy_protocol": {
+              "type": "boolean"
+            },
+            "proxy_protocol_accept_no_header": {
+              "type": "boolean"
             },
             "network": {
               "anyOf": [
@@ -7394,6 +7789,12 @@
               "type": "string",
               "x-tag-reference": "inbound"
             },
+            "proxy_protocol": {
+              "type": "boolean"
+            },
+            "proxy_protocol_accept_no_header": {
+              "type": "boolean"
+            },
             "users": {
               "type": "array",
               "items": {
@@ -7417,6 +7818,121 @@
             },
             "transport": {
               "$ref": "#/$defs/V2RayTransport"
+            },
+            "speed_test": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "trusttunnel"
+            },
+            "tag": {
+              "type": "string"
+            },
+            "listen": {
+              "type": "string"
+            },
+            "listen_port": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 65535
+            },
+            "bind_interface": {
+              "type": "string"
+            },
+            "routing_mark": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 4294967295
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            },
+            "reuse_addr": {
+              "type": "boolean"
+            },
+            "netns": {
+              "type": "string",
+              "x-tag-reference": "network_namespace"
+            },
+            "disable_tcp_keep_alive": {
+              "type": "boolean"
+            },
+            "tcp_keep_alive": {
+              "$ref": "#/$defs/Duration"
+            },
+            "tcp_keep_alive_interval": {
+              "$ref": "#/$defs/Duration"
+            },
+            "tcp_fast_open": {
+              "type": "boolean"
+            },
+            "tcp_multi_path": {
+              "type": "boolean"
+            },
+            "udp_fragment": {
+              "type": "boolean"
+            },
+            "udp_timeout": {
+              "$ref": "#/$defs/UDPTimeout"
+            },
+            "detour": {
+              "type": "string",
+              "x-tag-reference": "inbound"
+            },
+            "proxy_protocol": {
+              "type": "boolean"
+            },
+            "proxy_protocol_accept_no_header": {
+              "type": "boolean"
+            },
+            "users": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/User"
+              }
+            },
+            "quic_congestion_control": {
+              "type": "string"
+            },
+            "network": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "tcp",
+                    "udp"
+                  ]
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "tcp",
+                      "udp"
+                    ]
+                  }
+                }
+              ]
+            },
+            "tls": {
+              "$ref": "#/$defs/InboundTLSOptions"
+            },
+            "speed_test": {
+              "type": "string"
             }
           },
           "required": [
@@ -7488,6 +8004,12 @@
               "type": "string",
               "x-tag-reference": "inbound"
             },
+            "proxy_protocol": {
+              "type": "boolean"
+            },
+            "proxy_protocol_accept_no_header": {
+              "type": "boolean"
+            },
             "users": {
               "type": "array",
               "items": {
@@ -7550,6 +8072,9 @@
             },
             "disable_path_mtu_discovery": {
               "type": "boolean"
+            },
+            "speed_test": {
+              "type": "string"
             }
           },
           "required": [
@@ -8005,6 +8530,12 @@
               "type": "string",
               "x-tag-reference": "inbound"
             },
+            "proxy_protocol": {
+              "type": "boolean"
+            },
+            "proxy_protocol_accept_no_header": {
+              "type": "boolean"
+            },
             "users": {
               "type": "array",
               "items": {
@@ -8019,6 +8550,12 @@
             },
             "transport": {
               "$ref": "#/$defs/V2RayTransport"
+            },
+            "decryption": {
+              "type": "string"
+            },
+            "speed_test": {
+              "type": "string"
             }
           },
           "required": [
@@ -8090,6 +8627,12 @@
               "type": "string",
               "x-tag-reference": "inbound"
             },
+            "proxy_protocol": {
+              "type": "boolean"
+            },
+            "proxy_protocol_accept_no_header": {
+              "type": "boolean"
+            },
             "users": {
               "type": "array",
               "items": {
@@ -8104,6 +8647,9 @@
             },
             "transport": {
               "$ref": "#/$defs/V2RayTransport"
+            },
+            "speed_test": {
+              "type": "string"
             }
           },
           "required": [
@@ -8262,6 +8808,21 @@
         },
         "fallback_delay": {
           "$ref": "#/$defs/Duration"
+        },
+        "proxy_protocol": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "integer",
+              "enum": [
+                0,
+                1,
+                2
+              ]
+            }
+          ]
         }
       },
       "additionalProperties": false
@@ -8293,6 +8854,27 @@
         },
         "max_time_difference": {
           "$ref": "#/$defs/Duration"
+        },
+        "fallback_limit": {
+          "type": "object",
+          "properties": {
+            "sampling_period": {
+              "$ref": "#/$defs/Duration"
+            },
+            "down_mbps": {
+              "type": "number"
+            },
+            "down_burst_mbps": {
+              "type": "number"
+            },
+            "up_mbps": {
+              "type": "number"
+            },
+            "up_burst_mbps": {
+              "type": "number"
+            }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false
@@ -8671,6 +9253,21 @@
         },
         "fallback_delay": {
           "$ref": "#/$defs/Duration"
+        },
+        "proxy_protocol": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "integer",
+              "enum": [
+                0,
+                1,
+                2
+              ]
+            }
+          ]
         }
       },
       "additionalProperties": false
@@ -10829,6 +11426,21 @@
             "fallback_delay": {
               "$ref": "#/$defs/Duration"
             },
+            "proxy_protocol": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "integer",
+                  "enum": [
+                    0,
+                    1,
+                    2
+                  ]
+                }
+              ]
+            },
             "server": {
               "type": "string"
             },
@@ -11010,6 +11622,21 @@
             },
             "fallback_delay": {
               "$ref": "#/$defs/Duration"
+            },
+            "proxy_protocol": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "integer",
+                  "enum": [
+                    0,
+                    1,
+                    2
+                  ]
+                }
+              ]
             }
           },
           "required": [
@@ -11124,6 +11751,21 @@
             },
             "fallback_delay": {
               "$ref": "#/$defs/Duration"
+            },
+            "proxy_protocol": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "integer",
+                  "enum": [
+                    0,
+                    1,
+                    2
+                  ]
+                }
+              ]
             },
             "server": {
               "type": "string"
@@ -11261,6 +11903,21 @@
             },
             "fallback_delay": {
               "$ref": "#/$defs/Duration"
+            },
+            "proxy_protocol": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "integer",
+                  "enum": [
+                    0,
+                    1,
+                    2
+                  ]
+                }
+              ]
             },
             "server": {
               "type": "string"
@@ -11509,6 +12166,21 @@
             },
             "fallback_delay": {
               "$ref": "#/$defs/Duration"
+            },
+            "proxy_protocol": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "integer",
+                  "enum": [
+                    0,
+                    1,
+                    2
+                  ]
+                }
+              ]
             },
             "server": {
               "type": "string"
@@ -11778,6 +12450,21 @@
             "fallback_delay": {
               "$ref": "#/$defs/Duration"
             },
+            "proxy_protocol": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "integer",
+                  "enum": [
+                    0,
+                    1,
+                    2
+                  ]
+                }
+              ]
+            },
             "server": {
               "type": "string"
             },
@@ -12003,6 +12690,21 @@
             "fallback_delay": {
               "$ref": "#/$defs/Duration"
             },
+            "proxy_protocol": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "integer",
+                  "enum": [
+                    0,
+                    1,
+                    2
+                  ]
+                }
+              ]
+            },
             "server": {
               "type": "string"
             },
@@ -12206,6 +12908,21 @@
             "fallback_delay": {
               "$ref": "#/$defs/Duration"
             },
+            "proxy_protocol": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "integer",
+                  "enum": [
+                    0,
+                    1,
+                    2
+                  ]
+                }
+              ]
+            },
             "server": {
               "type": "string"
             },
@@ -12346,6 +13063,21 @@
                 },
                 "fallback_delay": {
                   "$ref": "#/$defs/Duration"
+                },
+                "proxy_protocol": {
+                  "anyOf": [
+                    {
+                      "type": "boolean"
+                    },
+                    {
+                      "type": "integer",
+                      "enum": [
+                        0,
+                        1,
+                        2
+                      ]
+                    }
+                  ]
                 },
                 "server": {
                   "type": "string"
@@ -12514,6 +13246,21 @@
                 "fallback_delay": {
                   "$ref": "#/$defs/Duration"
                 },
+                "proxy_protocol": {
+                  "anyOf": [
+                    {
+                      "type": "boolean"
+                    },
+                    {
+                      "type": "integer",
+                      "enum": [
+                        0,
+                        1,
+                        2
+                      ]
+                    }
+                  ]
+                },
                 "server": {
                   "type": "string"
                 },
@@ -12676,6 +13423,21 @@
             },
             "fallback_delay": {
               "$ref": "#/$defs/Duration"
+            },
+            "proxy_protocol": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "integer",
+                  "enum": [
+                    0,
+                    1,
+                    2
+                  ]
+                }
+              ]
             },
             "server": {
               "type": "string"
@@ -12858,6 +13620,21 @@
             },
             "fallback_delay": {
               "$ref": "#/$defs/Duration"
+            },
+            "proxy_protocol": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "integer",
+                  "enum": [
+                    0,
+                    1,
+                    2
+                  ]
+                }
+              ]
             },
             "server": {
               "type": "string"
@@ -13074,6 +13851,21 @@
             "fallback_delay": {
               "$ref": "#/$defs/Duration"
             },
+            "proxy_protocol": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "integer",
+                  "enum": [
+                    0,
+                    1,
+                    2
+                  ]
+                }
+              ]
+            },
             "executable_path": {
               "type": "string"
             },
@@ -13206,6 +13998,21 @@
             "fallback_delay": {
               "$ref": "#/$defs/Duration"
             },
+            "proxy_protocol": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "integer",
+                  "enum": [
+                    0,
+                    1,
+                    2
+                  ]
+                }
+              ]
+            },
             "server": {
               "type": "string"
             },
@@ -13246,6 +14053,184 @@
             },
             "transport": {
               "$ref": "#/$defs/V2RayTransport"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "trusttunnel"
+            },
+            "tag": {
+              "type": "string"
+            },
+            "detour": {
+              "type": "string",
+              "x-tag-reference": "outbound"
+            },
+            "bind_interface": {
+              "type": "string"
+            },
+            "inet4_bind_address": {
+              "type": "string"
+            },
+            "inet6_bind_address": {
+              "type": "string"
+            },
+            "bind_address_no_port": {
+              "type": "boolean"
+            },
+            "protect_path": {
+              "type": "string"
+            },
+            "routing_mark": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 4294967295
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            },
+            "reuse_addr": {
+              "type": "boolean"
+            },
+            "netns": {
+              "type": "string",
+              "x-tag-reference": "network_namespace"
+            },
+            "connect_timeout": {
+              "$ref": "#/$defs/Duration"
+            },
+            "tcp_fast_open": {
+              "type": "boolean"
+            },
+            "tcp_multi_path": {
+              "type": "boolean"
+            },
+            "disable_tcp_keep_alive": {
+              "type": "boolean"
+            },
+            "tcp_keep_alive": {
+              "$ref": "#/$defs/Duration"
+            },
+            "tcp_keep_alive_interval": {
+              "$ref": "#/$defs/Duration"
+            },
+            "udp_fragment": {
+              "type": "boolean"
+            },
+            "domain_resolver": {
+              "$ref": "#/$defs/DomainResolver"
+            },
+            "network_strategy": {
+              "type": "string",
+              "enum": [
+                "default",
+                "fallback",
+                "hybrid"
+              ]
+            },
+            "network_type": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/InterfaceType"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/InterfaceType"
+                  }
+                }
+              ]
+            },
+            "fallback_network_type": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/InterfaceType"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/InterfaceType"
+                  }
+                }
+              ]
+            },
+            "fallback_delay": {
+              "$ref": "#/$defs/Duration"
+            },
+            "proxy_protocol": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "integer",
+                  "enum": [
+                    0,
+                    1,
+                    2
+                  ]
+                }
+              ]
+            },
+            "server": {
+              "type": "string"
+            },
+            "server_port": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 65535
+            },
+            "network": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "tcp",
+                    "udp",
+                    "icmp"
+                  ]
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "tcp",
+                      "udp",
+                      "icmp"
+                    ]
+                  }
+                }
+              ]
+            },
+            "username": {
+              "type": "string"
+            },
+            "password": {
+              "type": "string"
+            },
+            "health_check": {
+              "type": "boolean"
+            },
+            "quic": {
+              "type": "boolean"
+            },
+            "quic_congestion_control": {
+              "type": "string"
+            },
+            "tls": {
+              "$ref": "#/$defs/OutboundTLSOptions"
             }
           },
           "required": [
@@ -13360,6 +14345,21 @@
             },
             "fallback_delay": {
               "$ref": "#/$defs/Duration"
+            },
+            "proxy_protocol": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "integer",
+                  "enum": [
+                    0,
+                    1,
+                    2
+                  ]
+                }
+              ]
             },
             "server": {
               "type": "string"
@@ -13613,6 +14613,21 @@
             "fallback_delay": {
               "$ref": "#/$defs/Duration"
             },
+            "proxy_protocol": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "integer",
+                  "enum": [
+                    0,
+                    1,
+                    2
+                  ]
+                }
+              ]
+            },
             "server": {
               "type": "string"
             },
@@ -13658,6 +14673,9 @@
               "$ref": "#/$defs/V2RayTransport"
             },
             "packet_encoding": {
+              "type": "string"
+            },
+            "encryption": {
               "type": "string"
             }
           },
@@ -13773,6 +14791,21 @@
             },
             "fallback_delay": {
               "$ref": "#/$defs/Duration"
+            },
+            "proxy_protocol": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "integer",
+                  "enum": [
+                    0,
+                    1,
+                    2
+                  ]
+                }
+              ]
             },
             "server": {
               "type": "string"
@@ -15082,6 +16115,21 @@
             },
             "fallback_delay": {
               "$ref": "#/$defs/Duration"
+            },
+            "proxy_protocol": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "integer",
+                  "enum": [
+                    0,
+                    1,
+                    2
+                  ]
+                }
+              ]
             }
           },
           "required": [
@@ -15149,6 +16197,17 @@
                 "wrong-md5",
                 "wrong-timestamp"
               ]
+            }
+          },
+          "required": [
+            "action"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "action": {
+              "const": "pass"
             }
           },
           "required": [
@@ -15269,6 +16328,46 @@
             },
             "client_subnet": {
               "type": "string"
+            }
+          },
+          "required": [
+            "action"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "action": {
+              "const": "limit-options"
+            },
+            "scope": {
+              "type": "string"
+            },
+            "clients": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 4294967295
+            },
+            "down_mbps": {
+              "type": "number"
+            },
+            "up_mbps": {
+              "type": "number"
+            },
+            "total_mbps": {
+              "type": "number"
+            },
+            "sampling_period": {
+              "$ref": "#/$defs/Duration"
+            },
+            "down_burst_mbps": {
+              "type": "number"
+            },
+            "up_burst_mbps": {
+              "type": "number"
+            },
+            "total_burst_mbps": {
+              "type": "number"
             }
           },
           "required": [
@@ -15477,6 +16576,12 @@
               "type": "string",
               "x-tag-reference": "inbound"
             },
+            "proxy_protocol": {
+              "type": "boolean"
+            },
+            "proxy_protocol_accept_no_header": {
+              "type": "boolean"
+            },
             "secret": {
               "type": "string"
             },
@@ -15608,6 +16713,12 @@
               "type": "string",
               "x-tag-reference": "outbound"
             },
+            "proxy_protocol": {
+              "type": "boolean"
+            },
+            "proxy_protocol_accept_no_header": {
+              "type": "boolean"
+            },
             "tls": {
               "$ref": "#/$defs/InboundTLSOptions"
             },
@@ -15695,6 +16806,12 @@
             "detour": {
               "type": "string",
               "x-tag-reference": "inbound"
+            },
+            "proxy_protocol": {
+              "type": "boolean"
+            },
+            "proxy_protocol_accept_no_header": {
+              "type": "boolean"
             },
             "tls": {
               "$ref": "#/$defs/InboundTLSOptions"
@@ -15851,6 +16968,21 @@
                         },
                         "fallback_delay": {
                           "$ref": "#/$defs/Duration"
+                        },
+                        "proxy_protocol": {
+                          "anyOf": [
+                            {
+                              "type": "boolean"
+                            },
+                            {
+                              "type": "integer",
+                              "enum": [
+                                0,
+                                1,
+                                2
+                              ]
+                            }
+                          ]
                         },
                         "idle_timeout": {
                           "$ref": "#/$defs/Duration"
@@ -16034,6 +17166,21 @@
                           "fallback_delay": {
                             "$ref": "#/$defs/Duration"
                           },
+                          "proxy_protocol": {
+                            "anyOf": [
+                              {
+                                "type": "boolean"
+                              },
+                              {
+                                "type": "integer",
+                                "enum": [
+                                  0,
+                                  1,
+                                  2
+                                ]
+                              }
+                            ]
+                          },
                           "idle_timeout": {
                             "$ref": "#/$defs/Duration"
                           },
@@ -16171,6 +17318,12 @@
                     "detour": {
                       "type": "string",
                       "x-tag-reference": "inbound"
+                    },
+                    "proxy_protocol": {
+                      "type": "boolean"
+                    },
+                    "proxy_protocol_accept_no_header": {
+                      "type": "boolean"
                     }
                   },
                   "additionalProperties": false
@@ -16246,6 +17399,12 @@
             "detour": {
               "type": "string",
               "x-tag-reference": "inbound"
+            },
+            "proxy_protocol": {
+              "type": "boolean"
+            },
+            "proxy_protocol_accept_no_header": {
+              "type": "boolean"
             },
             "tls": {
               "$ref": "#/$defs/InboundTLSOptions"
@@ -16356,6 +17515,12 @@
             "detour": {
               "type": "string",
               "x-tag-reference": "outbound"
+            },
+            "proxy_protocol": {
+              "type": "boolean"
+            },
+            "proxy_protocol_accept_no_header": {
+              "type": "boolean"
             },
             "tls": {
               "$ref": "#/$defs/InboundTLSOptions"
@@ -16487,6 +17652,12 @@
             "detour": {
               "type": "string",
               "x-tag-reference": "inbound"
+            },
+            "proxy_protocol": {
+              "type": "boolean"
+            },
+            "proxy_protocol_accept_no_header": {
+              "type": "boolean"
             }
           },
           "required": [
@@ -16557,6 +17728,12 @@
             "detour": {
               "type": "string",
               "x-tag-reference": "inbound"
+            },
+            "proxy_protocol": {
+              "type": "boolean"
+            },
+            "proxy_protocol_accept_no_header": {
+              "type": "boolean"
             },
             "servers": {
               "type": "object",
@@ -16684,6 +17861,21 @@
             "fallback_delay": {
               "$ref": "#/$defs/Duration"
             },
+            "proxy_protocol": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "integer",
+                  "enum": [
+                    0,
+                    1,
+                    2
+                  ]
+                }
+              ]
+            },
             "server": {
               "type": "string"
             },
@@ -16777,6 +17969,12 @@
                   "type": "string",
                   "x-tag-reference": "inbound"
                 },
+                "proxy_protocol": {
+                  "type": "boolean"
+                },
+                "proxy_protocol_accept_no_header": {
+                  "type": "boolean"
+                },
                 "devices": {
                   "type": "array",
                   "items": {
@@ -16855,6 +18053,12 @@
                 "detour": {
                   "type": "string",
                   "x-tag-reference": "inbound"
+                },
+                "proxy_protocol": {
+                  "type": "boolean"
+                },
+                "proxy_protocol_accept_no_header": {
+                  "type": "boolean"
                 }
               },
               "required": [
@@ -16976,6 +18180,21 @@
         },
         "fallback_delay": {
           "$ref": "#/$defs/Duration"
+        },
+        "proxy_protocol": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "integer",
+              "enum": [
+                0,
+                1,
+                2
+              ]
+            }
+          ]
         }
       },
       "additionalProperties": false
@@ -17206,6 +18425,9 @@
             "type": {
               "const": "ws"
             },
+            "request_host": {
+              "type": "string"
+            },
             "path": {
               "type": "string"
             },
@@ -17282,8 +18504,593 @@
             "type"
           ],
           "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "xhttp"
+            },
+            "mode": {
+              "type": "string"
+            },
+            "host": {
+              "type": "string"
+            },
+            "path": {
+              "type": "string"
+            },
+            "headers": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            },
+            "domain_strategy": {
+              "$ref": "#/$defs/DomainStrategy"
+            },
+            "x_padding_bytes": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "from": {
+                      "type": "integer"
+                    },
+                    "to": {
+                      "type": "integer"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "no_grpc_header": {
+              "type": "boolean"
+            },
+            "no_sse_header": {
+              "type": "boolean"
+            },
+            "sc_max_each_post_bytes": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "from": {
+                      "type": "integer"
+                    },
+                    "to": {
+                      "type": "integer"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "sc_min_posts_interval_ms": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "from": {
+                      "type": "integer"
+                    },
+                    "to": {
+                      "type": "integer"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "sc_max_buffered_posts": {
+              "type": "integer"
+            },
+            "sc_stream_up_server_secs": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "from": {
+                      "type": "integer"
+                    },
+                    "to": {
+                      "type": "integer"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "server_max_header_bytes": {
+              "type": "integer"
+            },
+            "trusted_x_forwarded_for": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              ]
+            },
+            "xmux": {
+              "$ref": "#/$defs/V2RayXHTTPXmuxOptions"
+            },
+            "x_padding_obfs_mode": {
+              "type": "boolean"
+            },
+            "x_padding_key": {
+              "type": "string"
+            },
+            "x_padding_header": {
+              "type": "string"
+            },
+            "x_padding_placement": {
+              "type": "string"
+            },
+            "x_padding_method": {
+              "type": "string"
+            },
+            "uplink_http_method": {
+              "type": "string"
+            },
+            "session_placement": {
+              "type": "string"
+            },
+            "session_key": {
+              "type": "string"
+            },
+            "session_id_table": {
+              "type": "string"
+            },
+            "session_id_length": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "from": {
+                      "type": "integer"
+                    },
+                    "to": {
+                      "type": "integer"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "seq_placement": {
+              "type": "string"
+            },
+            "seq_key": {
+              "type": "string"
+            },
+            "uplink_data_placement": {
+              "type": "string"
+            },
+            "uplink_data_key": {
+              "type": "string"
+            },
+            "uplink_chunk_size": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "from": {
+                      "type": "integer"
+                    },
+                    "to": {
+                      "type": "integer"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "download": {
+              "$ref": "#/$defs/V2RayXHTTPDownloadOptions"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "additionalProperties": false
         }
       ]
+    },
+    "V2RayXHTTPDownloadOptions": {
+      "type": "object",
+      "properties": {
+        "host": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "headers": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "domain_strategy": {
+          "$ref": "#/$defs/DomainStrategy"
+        },
+        "x_padding_bytes": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "from": {
+                  "type": "integer"
+                },
+                "to": {
+                  "type": "integer"
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
+        "no_grpc_header": {
+          "type": "boolean"
+        },
+        "no_sse_header": {
+          "type": "boolean"
+        },
+        "sc_max_each_post_bytes": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "from": {
+                  "type": "integer"
+                },
+                "to": {
+                  "type": "integer"
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
+        "sc_min_posts_interval_ms": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "from": {
+                  "type": "integer"
+                },
+                "to": {
+                  "type": "integer"
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
+        "sc_max_buffered_posts": {
+          "type": "integer"
+        },
+        "sc_stream_up_server_secs": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "from": {
+                  "type": "integer"
+                },
+                "to": {
+                  "type": "integer"
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
+        "server_max_header_bytes": {
+          "type": "integer"
+        },
+        "trusted_x_forwarded_for": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "xmux": {
+          "$ref": "#/$defs/V2RayXHTTPXmuxOptions"
+        },
+        "x_padding_obfs_mode": {
+          "type": "boolean"
+        },
+        "x_padding_key": {
+          "type": "string"
+        },
+        "x_padding_header": {
+          "type": "string"
+        },
+        "x_padding_placement": {
+          "type": "string"
+        },
+        "x_padding_method": {
+          "type": "string"
+        },
+        "uplink_http_method": {
+          "type": "string"
+        },
+        "session_placement": {
+          "type": "string"
+        },
+        "session_key": {
+          "type": "string"
+        },
+        "session_id_table": {
+          "type": "string"
+        },
+        "session_id_length": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "from": {
+                  "type": "integer"
+                },
+                "to": {
+                  "type": "integer"
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
+        "seq_placement": {
+          "type": "string"
+        },
+        "seq_key": {
+          "type": "string"
+        },
+        "uplink_data_placement": {
+          "type": "string"
+        },
+        "uplink_data_key": {
+          "type": "string"
+        },
+        "uplink_chunk_size": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "from": {
+                  "type": "integer"
+                },
+                "to": {
+                  "type": "integer"
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
+        "server": {
+          "type": "string"
+        },
+        "server_port": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 65535
+        },
+        "tls": {
+          "$ref": "#/$defs/OutboundTLSOptions"
+        },
+        "detour": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "V2RayXHTTPXmuxOptions": {
+      "type": "object",
+      "properties": {
+        "max_concurrency": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "from": {
+                  "type": "integer"
+                },
+                "to": {
+                  "type": "integer"
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
+        "max_connections": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "from": {
+                  "type": "integer"
+                },
+                "to": {
+                  "type": "integer"
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
+        "c_max_reuse_times": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "from": {
+                  "type": "integer"
+                },
+                "to": {
+                  "type": "integer"
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
+        "h_max_request_times": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "from": {
+                  "type": "integer"
+                },
+                "to": {
+                  "type": "integer"
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
+        "h_max_reusable_secs": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "from": {
+                  "type": "integer"
+                },
+                "to": {
+                  "type": "integer"
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
+        "h_keep_alive_period": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
     },
     "VLESSUser": {
       "type": "object",
