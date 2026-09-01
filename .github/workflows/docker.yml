@@ -1,20 +1,27 @@
 name: Publish Docker Images
 
+permissions:
+  contents: read
+  packages: write
+
 on:
   #push:
   #  branches:
-  #    - stable
-  #    - testing
+  #    - superpower
+  #    - superpower-testing
   release:
     types:
       - published
   workflow_dispatch:
     inputs:
-      tag:
-        description: "The tag version you want to build"
-
-env:
-  REGISTRY_IMAGE: ghcr.io/sagernet/sing-box
+      sing_box_version:
+        description: "sing-box version"
+        required: true
+        type: string
+      superpower_version:
+        description: "superpower version"
+        required: true
+        type: string
 
 jobs:
   build_binary:
@@ -40,13 +47,17 @@ jobs:
       - name: Get commit to build
         id: ref
         run: |-
-          if [[ -z "${{ github.event.inputs.tag }}" ]]; then
+          if [[ "${{ github.event_name }}" != 'workflow_dispatch' ]]; then
             ref="${{ github.ref_name }}"
+            image_tag="$ref"
           else
-            ref="${{ github.event.inputs.tag }}"
+            image_tag="v${{ inputs.sing_box_version }}-superpower-${{ inputs.superpower_version }}"
+            ref="$image_tag"
           fi
           echo "ref=$ref"
+          echo "image_tag=$image_tag"
           echo "ref=$ref" >> $GITHUB_OUTPUT
+          echo "image_tag=$image_tag" >> $GITHUB_OUTPUT
       - name: Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
         with:
@@ -180,13 +191,17 @@ jobs:
       - name: Get commit to build
         id: ref
         run: |-
-          if [[ -z "${{ github.event.inputs.tag }}" ]]; then
+          if [[ "${{ github.event_name }}" != 'workflow_dispatch' ]]; then
             ref="${{ github.ref_name }}"
+            image_tag="$ref"
           else
-            ref="${{ github.event.inputs.tag }}"
+            image_tag="v${{ inputs.sing_box_version }}-superpower-${{ inputs.superpower_version }}"
+            ref="$image_tag"
           fi
           echo "ref=$ref"
+          echo "image_tag=$image_tag"
           echo "ref=$ref" >> $GITHUB_OUTPUT
+          echo "image_tag=$image_tag" >> $GITHUB_OUTPUT
       - name: Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
         with:
@@ -196,6 +211,9 @@ jobs:
         run: |
           platform=${{ matrix.platform }}
           echo "PLATFORM_PAIR=${platform//\//-}" >> $GITHUB_ENV
+      - name: Set registry image
+        run: |
+          echo "REGISTRY_IMAGE=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/sing-box" >> $GITHUB_ENV
       - name: Download binary
         uses: actions/download-artifact@v5
         with:
@@ -253,18 +271,25 @@ jobs:
       - name: Get commit to build
         id: ref
         run: |-
-          if [[ -z "${{ github.event.inputs.tag }}" ]]; then
+          if [[ "${{ github.event_name }}" != 'workflow_dispatch' ]]; then
             ref="${{ github.ref_name }}"
+            image_tag="$ref"
           else
-            ref="${{ github.event.inputs.tag }}"
+            image_tag="v${{ inputs.sing_box_version }}-superpower-${{ inputs.superpower_version }}"
+            ref="$image_tag"
           fi
           echo "ref=$ref"
+          echo "image_tag=$image_tag"
           echo "ref=$ref" >> $GITHUB_OUTPUT
+          echo "image_tag=$image_tag" >> $GITHUB_OUTPUT
       - name: Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
         with:
           ref: ${{ steps.ref.outputs.ref }}
           fetch-depth: 0
+      - name: Set registry image
+        run: |
+          echo "REGISTRY_IMAGE=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/sing-box" >> $GITHUB_ENV
       - name: Detect track
         run: bash .github/detect_track.sh
       - name: Download digests
@@ -287,10 +312,10 @@ jobs:
         run: |
           docker buildx imagetools create \
             -t "${{ env.REGISTRY_IMAGE }}:${{ env.DOCKER_TAG }}" \
-            -t "${{ env.REGISTRY_IMAGE }}:${{ steps.ref.outputs.ref }}" \
+            -t "${{ env.REGISTRY_IMAGE }}:${{ steps.ref.outputs.image_tag }}" \
             $(printf '${{ env.REGISTRY_IMAGE }}@sha256:%s ' *)
       - name: Inspect image
         if: github.event_name != 'push'
         run: |
           docker buildx imagetools inspect ${{ env.REGISTRY_IMAGE }}:${{ env.DOCKER_TAG }}
-          docker buildx imagetools inspect ${{ env.REGISTRY_IMAGE }}:${{ steps.ref.outputs.ref }}
+          docker buildx imagetools inspect ${{ env.REGISTRY_IMAGE }}:${{ steps.ref.outputs.image_tag }}
