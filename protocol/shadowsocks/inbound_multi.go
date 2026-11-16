@@ -4,7 +4,6 @@ import (
 	"context"
 	"net"
 	"os"
-	"sync"
 	"time"
 
 	"github.com/sagernet/sing-box/adapter"
@@ -287,12 +286,8 @@ func (h *MultiInbound) NewError(ctx context.Context, err error) {
 	NewError(h.logger, ctx, err)
 }
 
-func (h *legacyMultiInbound) Start(stage adapter.StartStage) error {
-	return (*MultiInbound)(h).Start(stage)
-}
-
-func (h *legacyMultiInbound) Close() error {
-	return (*MultiInbound)(h).Close()
+func (h *legacyMultiInbound) Start(stage adapter.StartStage, scope *adapter.Scope) error {
+	return (*MultiInbound)(h).Start(stage, scope)
 }
 
 //nolint:staticcheck
