@@ -1,0 +1,108 @@
+{
+  "log": {
+    "loglevel": "debug"
+  },
+  "inbounds": [
+    {
+      "listen": "127.0.0.1",
+      "port": 28014,
+      "protocol": "vless",
+      "settings": {
+        "clients": [
+          {
+            "id": "9b65b7e1-04c8-4717-8f45-2aa61fd25937"
+          }
+        ],
+        "decryption": "none"
+      },
+      "streamSettings": {
+        "network": "xhttp",
+        "security": "tls",
+        "xhttpSettings": {
+          "mode": "auto",
+          "host": "localhost",
+          "path": "/xhttp-h3",
+          "xPaddingBytes": "64-256"
+        },
+        "tlsSettings": {
+          "serverName": "localhost",
+          "alpn": [
+            "h3"
+          ],
+          "certificates": [
+            {
+              "certificate": [
+                "-----BEGIN CERTIFICATE-----",
+                "MIIDHzCCAgegAwIBAgIUH8SKGUyJuiXH5w4TwBBnVqtBu7gwDQYJKoZIhvcNAQEL",
+                "BQAwFDESMBAGA1UEAwwJbG9jYWxob3N0MB4XDTI2MDcxMTAxMDcyMloXDTM2MDcw",
+                "ODAxMDcyMlowFDESMBAGA1UEAwwJbG9jYWxob3N0MIIBIjANBgkqhkiG9w0BAQEF",
+                "AAOCAQ8AMIIBCgKCAQEAuIU1gZMpLyFwpsQzE6AlMJ2RgosI5dt8IIrHIM4pvdT6",
+                "WtQLS5VweH0h8ayKIESZvxpC2ucNV2hdqRXao/qtIOA4cuFpGueNpp85OWFjKVu0",
+                "yWs9I7VhVZUKfWAKlHPF09rtund2UbDmiEe/p+GIuR4kF+GAM/GTTcbJXjRDnVyb",
+                "vPcyftMoFIstS3LCf6JVBdD+jJG0REXzXrXcKaGlZjlqjIiiITVd4Sqp6+iqP8GP",
+                "1FhOOunB+3IO19GOryXmD1FTCzHiRZNgbKZuf09IGbXFx4NIj4l0Lpp2w4zxln9+",
+                "vcX+vXpMfUkopkEsxnU3jq6npdeIHrvMX4SOv90IPwIDAQABo2kwZzAdBgNVHQ4E",
+                "FgQUBuBzWQ6BuBlMrrYiSBMqqp4HPIwwHwYDVR0jBBgwFoAUBuBzWQ6BuBlMrrYi",
+                "SBMqqp4HPIwwDwYDVR0TAQH/BAUwAwEB/zAUBgNVHREEDTALgglsb2NhbGhvc3Qw",
+                "DQYJKoZIhvcNAQELBQADggEBALHlZO0PdwbCzC9nYow5sXZhAJ4mDjK16LVdL7qd",
+                "9oltMbcKKOUvmLd/38NGcV1TmtiNyzz71ouAM9mv2Eslz8JjGuTOk/Hz6JJTWQ78",
+                "e344chOJEXQVo8O5TN2Z4oiQnLmsm7eKVBZkdfwsyN0mhxTQ+rAahAD+XERH9Upq",
+                "bAIUS8nTpSCNwaRGstChdiQN9GU2LmoRa4yJB7CD2iyXzdFFTp5qdxKTaJLlfcmp",
+                "Kz/+MeaX1obBkvUG9QzucVijEVfwKf9wHMRRebYqziCHdrvpf/k8m3x5oz4/QZOK",
+                "BygAE6pByH+RGQYmI0CePy3tVhGCNo96qdtZLJ1JQOmZadw=",
+                "-----END CERTIFICATE-----"
+              ],
+              "key": [
+                "-----BEGIN PRIVATE KEY-----",
+                "MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC4hTWBkykvIXCm",
+                "xDMToCUwnZGCiwjl23wgiscgzim91Ppa1AtLlXB4fSHxrIogRJm/GkLa5w1XaF2p",
+                "Fdqj+q0g4Dhy4Wka542mnzk5YWMpW7TJaz0jtWFVlQp9YAqUc8XT2u26d3ZRsOaI",
+                "R7+n4Yi5HiQX4YAz8ZNNxsleNEOdXJu89zJ+0ygUiy1LcsJ/olUF0P6MkbRERfNe",
+                "tdwpoaVmOWqMiKIhNV3hKqnr6Ko/wY/UWE466cH7cg7X0Y6vJeYPUVMLMeJFk2Bs",
+                "pm5/T0gZtcXHg0iPiXQumnbDjPGWf369xf69ekx9SSimQSzGdTeOrqel14geu8xf",
+                "hI6/3Qg/AgMBAAECggEAVr75KpNedzPHW/886+sL0NEiyTZH1pfawQm9F6UUZpQr",
+                "pmuta7kziNF7FbzBqu3VQcw8xeB9mywLbCREB3cf0SbYItnpqaZWJ5EPO/SWw6jD",
+                "UzXBJnps6ekJZ2uxTZ0n0bNIs7LZwwnhNwxUA765oh2TZk6zELhvQc9Ed68mYmGK",
+                "FybogFzNLKQqj49lCrdX9+RMCJLd8KmAsilmcC17oL9k66GbuFQ+2A0SwsXGkk8C",
+                "TuwnTEp1f6D1c4mxoe7g+JG6m3B75hoeVNSFrclmQ5ej/lfBcv2dgcSwRfGGT1dG",
+                "QvXNKTu1tiZotFj8fTceb00pdfgfHjmKIKsdIoomIQKBgQD/65xvkUyn4mTFdCwh",
+                "AbFTBdvXHMHAcPt8LyxGaq9s4ROBlEi1GwQ76JUlQgKS+U4fhr4FU/ZFgHcBll3h",
+                "/bizPZG4rriaZ3NdKfi4MMZtveo8Bos38I226DShtgVbtk7IrP2vepb4Pcjmxk6U",
+                "SvWOuGoAw9Rj9yjPRlZhNEPneQKBgQC4k+jZGi8HDjG2ZXnxMN0xiJrnBKswb18g",
+                "hpTllQlJxIVESytGbfAyTdXBr6kogeFci4A1lp8vWwmAHXKicWBpafremgBGKvMo",
+                "PoRYgyee6GaN14nObOePnSiceuCsHropbPY9nvpFSwQp7AgPIhSgQjSPMV3ZiXcZ",
+                "y780ZREndwKBgQCqLcbs+bX7vbQ9CS9/E10TVEYIGXtNuNPClKvgd3kH8fPCqxRe",
+                "OgTqwZLMH8UObvHgTP13FYoiVXbNe2wap1l29247XRQsuLYiMZLPCMAqoattFvzk",
+                "yfWyt16oWh3eCrEBCOf5FI/nq045B42hVudLbJ4wvAg0IVrl2mP+Z37wIQKBgQCR",
+                "kWUkQ3gvUkx2kxVW2Li55gh0hcQVEOCvIDSx05ZdrTWFJNteUjoLEkOw2z7HiZcY",
+                "i5RzrvSgPmYBuje8UTo+KK0HfeEVda4LYTKzM8y9kH/BAenW+SCurL1om6gxVpJv",
+                "NVYGRykOGRmRjmrUtIYb1drpy38+nyFlIMENK2AaBQKBgG24E8Q4orI1N7vHCyQD",
+                "JLVw9AcmYYMVR3EHc0PA1lSItT6pM1PpTkv8ZxtfgYdIjBlolrzFkc8hbe6dSqlX",
+                "1NQW3+hWdjv+wUgQlljtR5OxnXyMF3AWqIMdlDZMpIpszNgSmaoYcSqOJ9hZgu2U",
+                "bv9wdALuSyqAtZUhzvztdqXC",
+                "-----END PRIVATE KEY-----"
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "outbounds": [
+    {
+      "tag": "direct",
+      "protocol": "freedom",
+      "settings": {
+        "finalRules": [
+          {
+            "action": "allow",
+            "ip": [
+              "0.0.0.0/0",
+              "::/0"
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
