@@ -38,6 +38,7 @@ const (
 	TypeCCM                = "ccm"
 	TypeOCM                = "ocm"
 	TypeOOMKiller          = "oom-killer"
+	TypeTrustTunnel        = "trusttunnel"
 	TypeUSBIPServer        = "usbip-server"
 	TypeUSBIPClient        = "usbip-client"
 	TypeHysteriaRealm      = "hysteria-realm"
@@ -112,6 +113,8 @@ func ProxyDisplayName(proxyType string) string {
 		return "Tailscale"
 	case TypeCloudflared:
 		return "Cloudflared"
+	case TypeTrustTunnel:
+		return "TrustTunnel"
 	case TypeSelector:
 		return "Selector"
 	case TypeURLTest:
