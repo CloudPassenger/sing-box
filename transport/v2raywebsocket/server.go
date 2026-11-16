@@ -34,6 +34,8 @@ type Server struct {
 	tlsConfig           tls.ServerConfig
 	handler             adapter.V2RayServerTransportHandler
 	httpServer          *http.Server
+	requestHost         string
+	validateRequestHost bool
 	path                string
 	maxEarlyData        uint32
 	earlyDataHeaderName string
@@ -41,11 +43,14 @@ type Server struct {
 }
 
 func NewServer(ctx context.Context, logger logger.ContextLogger, options option.V2RayWebsocketOptions, tlsConfig tls.ServerConfig, handler adapter.V2RayServerTransportHandler) (*Server, error) {
+	requestHost := strings.TrimSpace(options.RequestHost)
 	server := &Server{
 		ctx:                 ctx,
 		logger:              logger,
 		tlsConfig:           tlsConfig,
 		handler:             handler,
+		requestHost:         normalizeWebSocketHost(requestHost),
+		validateRequestHost: requestHost != "",
 		path:                options.Path,
 		maxEarlyData:        options.MaxEarlyData,
 		earlyDataHeaderName: options.EarlyDataHeaderName,
@@ -71,7 +76,23 @@ func NewServer(ctx context.Context, logger logger.ContextLogger, options option.
 	return server, nil
 }
 
+func normalizeWebSocketHost(host string) string {
+	host = strings.TrimSpace(host)
+	if parsedHost, _, err := net.SplitHostPort(host); err == nil {
+		host = parsedHost
+	}
+	host = strings.TrimPrefix(strings.TrimSuffix(host, "]"), "[")
+	return strings.ToLower(strings.TrimSuffix(host, "."))
+}
+
 func (s *Server) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
+	if s.validateRequestHost {
+		host := normalizeWebSocketHost(request.Host)
+		if host != s.requestHost {
+			s.invalidRequest(writer, request, http.StatusBadRequest, E.New("bad host: ", request.Host))
+			return
+		}
+	}
 	if s.maxEarlyData == 0 || s.earlyDataHeaderName != "" {
 		if request.URL.Path != s.path {
 			s.invalidRequest(writer, request, http.StatusNotFound, E.New("bad path: ", request.URL.Path))
