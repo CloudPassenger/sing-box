@@ -34,7 +34,10 @@ func RegisterOutbound(registry *outbound.Registry) {
 	outbound.Register[option.TrustTunnelOutboundOptions](registry, C.TypeTrustTunnel, NewOutbound)
 }
 
-var _ adapter.FlowOutbound = (*Outbound)(nil)
+var (
+	_ adapter.FlowOutbound            = (*Outbound)(nil)
+	_ adapter.InterfaceUpdateListener = (*Outbound)(nil)
+)
 
 type Outbound struct {
 	outbound.Adapter
@@ -100,10 +103,16 @@ func NewOutbound(ctx context.Context, router adapter.Router, logger log.ContextL
 	}, nil
 }
 
-func (h *Outbound) Start(stage adapter.StartStage) error {
+func (h *Outbound) Start(stage adapter.StartStage, scope *adapter.Scope) error {
 	if stage != adapter.StartStateStart {
 		return nil
 	}
+	scope.Add(func() error {
+		return common.Close(
+			common.PtrOrNil(h.icmpPort),
+			common.PtrOrNil(h.client),
+		)
+	})
 	return h.client.Start()
 }
 
@@ -144,7 +153,7 @@ func (h *Outbound) ListenPacket(ctx context.Context, destination M.Socksaddr) (n
 	return h.client.ListenPacket(ctx)
 }
 
-func (h *Outbound) InterfaceUpdated() {
+func (h *Outbound) InterfaceUpdated(ctx context.Context) {
 	h.client.ResetConnections()
 }
 
@@ -188,11 +197,4 @@ func (h *Outbound) WritePackets(packets [][]byte) error {
 		return os.ErrInvalid
 	}
 	return h.icmpPort.WritePackets(packets)
-}
-
-func (h *Outbound) Close() error {
-	return common.Close(
-		common.PtrOrNil(h.icmpPort),
-		common.PtrOrNil(h.client),
-	)
 }

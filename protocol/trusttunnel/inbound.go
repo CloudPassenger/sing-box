@@ -80,41 +80,41 @@ func NewInbound(ctx context.Context, router adapter.Router, logger log.ContextLo
 	return inbound, nil
 }
 
-func (h *Inbound) Start(stage adapter.StartStage) (err error) {
+func (h *Inbound) Start(stage adapter.StartStage, scope *adapter.Scope) error {
 	if stage != adapter.StartStateStart {
-		return
+		return nil
 	}
 	if h.tlsConfig != nil {
-		err = h.tlsConfig.Start()
+		err := h.tlsConfig.Start()
 		if err != nil {
-			err = E.Cause(err, "start TLS config")
-			return
+			return E.Cause(err, "start TLS config")
 		}
+		scope.Add(h.tlsConfig.Close)
 	}
+	scope.Add(h.listener.Close)
 	var (
 		tcpListener net.Listener
 		udpConn     net.PacketConn
+		err         error
 	)
 	if common.Contains(h.network, N.NetworkTCP) {
 		tcpListener, err = h.listener.ListenTCP()
 		if err != nil {
-			_ = common.Close(h.listener)
-			return
+			return err
 		}
 	}
 	if common.Contains(h.network, N.NetworkUDP) {
 		udpConn, err = h.listener.ListenUDP()
 		if err != nil {
-			_ = common.Close(h.tlsConfig, tcpListener)
-			return
+			return err
 		}
 	}
 	err = h.service.Start(tcpListener, udpConn, h.tlsConfig)
 	if err != nil {
-		_ = common.Close(h.tlsConfig, tcpListener, udpConn)
-		return
+		return err
 	}
-	return
+	scope.Add(h.service.Close)
+	return nil
 }
 
 func (h *Inbound) NewConnectionEx(ctx context.Context, conn net.Conn, source M.Socksaddr, destination M.Socksaddr, onClose N.CloseHandlerFunc) {
@@ -147,11 +147,4 @@ func (h *Inbound) NewPacketConnectionEx(ctx context.Context, conn N.PacketConn, 
 		User:        username,
 	}
 	h.router.RoutePacketConnectionEx(ctx, conn, metadata, onClose)
-}
-
-func (h *Inbound) Close() error {
-	return common.Close(
-		h.service,
-		h.tlsConfig,
-	)
 }
