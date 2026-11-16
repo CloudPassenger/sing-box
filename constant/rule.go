@@ -35,6 +35,7 @@ const (
 	RuleActionTypeEvaluate     = "evaluate"
 	RuleActionTypeRespond      = "respond"
 	RuleActionTypeBypass       = "bypass"
+	RuleActionTypePass         = "pass"
 	RuleActionTypeReject       = "reject"
 	RuleActionTypeHijackDNS    = "hijack-dns"
 	RuleActionTypeSniff        = "sniff"
