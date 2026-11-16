@@ -2,11 +2,12 @@ package option
 
 import (
 	"crypto/tls"
-	"encoding/json"
+	"reflect"
 	"strings"
 
 	"github.com/sagernet/sing-box/schema"
 	E "github.com/sagernet/sing/common/exceptions"
+	"github.com/sagernet/sing/common/json"
 	"github.com/sagernet/sing/common/json/badoption"
 )
 
@@ -214,6 +215,62 @@ type InboundRealityOptions struct {
 	PrivateKey        string                         `json:"private_key,omitempty"`
 	ShortID           badoption.Listable[string]     `json:"short_id,omitempty"`
 	MaxTimeDifference badoption.Duration             `json:"max_time_difference,omitempty"`
+	FallbackLimit     *InboundRealityFallbackLimit   `json:"fallback_limit,omitempty"`
+}
+
+type _InboundRealityFallbackLimit struct {
+	SamplingPeriod badoption.Duration `json:"sampling_period,omitempty"`
+	DownMbps       *float64           `json:"down_mbps,omitempty"`
+	DownBurstMbps  *float64           `json:"down_burst_mbps,omitempty"`
+	UpMbps         *float64           `json:"up_mbps,omitempty"`
+	UpBurstMbps    *float64           `json:"up_burst_mbps,omitempty"`
+}
+
+type InboundRealityFallbackLimit _InboundRealityFallbackLimit
+
+func (l *InboundRealityFallbackLimit) UnmarshalJSON(data []byte) error {
+	err := json.UnmarshalDisallowUnknownFields(data, (*_InboundRealityFallbackLimit)(l))
+	if err != nil {
+		return err
+	}
+	if l.SamplingPeriod < 0 {
+		return E.New("invalid sampling_period")
+	}
+	if l.DownMbps != nil && *l.DownMbps <= 0 {
+		return E.New("invalid down_mbps")
+	}
+	if l.UpMbps != nil && *l.UpMbps <= 0 {
+		return E.New("invalid up_mbps")
+	}
+	if l.DownBurstMbps != nil {
+		if l.DownMbps == nil {
+			return E.New("down_burst_mbps requires down_mbps")
+		}
+		if *l.DownBurstMbps <= 0 {
+			return E.New("invalid down_burst_mbps")
+		}
+	}
+	if l.UpBurstMbps != nil {
+		if l.UpMbps == nil {
+			return E.New("up_burst_mbps requires up_mbps")
+		}
+		if *l.UpBurstMbps <= 0 {
+			return E.New("invalid up_burst_mbps")
+		}
+	}
+	return nil
+}
+
+// DescribeSchema is required because the custom UnmarshalJSON above only adds
+// validation: without it the 1.14 schema generator rejects this type as an
+// unmapped custom JSON type and `sing-box schema` fails outright.
+func (l InboundRealityFallbackLimit) DescribeSchema(builder schema.Builder) (*schema.Node, error) {
+	node := schema.StrictObject()
+	err := builder.FlattenStruct(node, reflect.TypeFor[_InboundRealityFallbackLimit]())
+	if err != nil {
+		return nil, err
+	}
+	return node, nil
 }
 
 type InboundRealityHandshakeOptions struct {
