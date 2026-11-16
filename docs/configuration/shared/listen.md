@@ -8,8 +8,10 @@ icon: material/new-box
 
 !!! quote "Changes in sing-box 1.13.0"
 
-    :material-plus: [disable_tcp_keep_alive](#disable_tcp_keep_alive)  
-    :material-alert: [tcp_keep_alive](#tcp_keep_alive)
+	:material-plus: [disable_tcp_keep_alive](#disable_tcp_keep_alive)  
+	:material-alert: [tcp_keep_alive](#tcp_keep_alive)  
+	:material-plus: [proxy_protocol](#proxy_protocol)  
+	:material-plus: [proxy_protocol_accept_no_header](#proxy_protocol_accept_no_header)
 
 !!! quote "Changes in sing-box 1.12.0"
 
@@ -44,6 +46,8 @@ icon: material/new-box
   "udp_fragment": false,
   "udp_timeout": "",
   "detour": "",
+  "proxy_protocol": false,
+  "proxy_protocol_accept_no_header": false,
 
   // Deprecated
   
@@ -152,6 +156,30 @@ UDP NAT expiration time.
 If set, connections will be forwarded to the specified inbound.
 
 Requires target inbound support, see [Injectable](/configuration/inbound/#fields).
+
+#### proxy_protocol
+
+!!! question "Since sing-box 1.13.0"
+
+Enable receiving Proxy Protocol headers on TCP listeners.
+
+Both Proxy Protocol v1 and v2 are accepted.
+
+This option only applies to TCP streams.
+
+!!! warning ""
+
+	Proxy Protocol is not authenticated. Only enable this on ports that are exclusively reached through a trusted upstream proxy or load balancer.
+
+#### proxy_protocol_accept_no_header
+
+!!! question "Since sing-box 1.13.0"
+
+Allow TCP connections that do not include a Proxy Protocol header.
+
+If enabled, connections without a Proxy Protocol header fall back to the socket peer address.
+
+This option requires `proxy_protocol` to be enabled.
 
 #### sniff
 

@@ -12,7 +12,8 @@ icon: material/new-box
     :material-plus: [disable_tcp_keep_alive](#disable_tcp_keep_alive)  
     :material-plus: [tcp_keep_alive](#tcp_keep_alive)  
     :material-plus: [tcp_keep_alive_interval](#tcp_keep_alive_interval)  
-    :material-plus: [bind_address_no_port](#bind_address_no_port)
+    :material-plus: [bind_address_no_port](#bind_address_no_port)  
+    :material-plus: [proxy_protocol](#proxy_protocol)
 
 !!! quote "sing-box 1.12.0 中的更改"
 
@@ -46,6 +47,7 @@ icon: material/new-box
   "tcp_keep_alive": "",
   "tcp_keep_alive_interval": "",
   "udp_fragment": false,
+  "proxy_protocol": 0,
 
   "domain_resolver": "", // 或 {}
   "network_strategy": "",
@@ -168,6 +170,22 @@ TCP keep alive 间隔。
 #### udp_fragment
 
 启用 UDP 分段。
+
+#### proxy_protocol
+
+!!! question "自 sing-box 1.13.0 起"
+
+在 TCP 连接上发送 Proxy Protocol。
+
+支持的值：
+
+- `false` 或 `0`：禁用
+- `1`：发送 Proxy Protocol v1
+- `true` 或 `2`：发送 Proxy Protocol v2
+
+该选项仅对 TCP 流生效。
+
+Proxy Protocol 头会写在原始 TCP 流的起始位置，也就是 TLS 和更高层协议数据之前。
 
 #### domain_resolver
 
