@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"io"
 	"net"
 	"testing"
 	"time"
@@ -202,12 +203,13 @@ func (o *typedSpeedTestOutbound) Network() []string { return o.networks }
 
 type groupedSpeedTestOutbound struct {
 	*typedSpeedTestOutbound
-	selected string
+	selected adapter.Outbound
 	all      []string
 }
 
-func (o *groupedSpeedTestOutbound) Now() string   { return o.selected }
-func (o *groupedSpeedTestOutbound) All() []string { return o.all }
+func (o *groupedSpeedTestOutbound) Selected(string) adapter.Outbound  { return o.selected }
+func (o *groupedSpeedTestOutbound) All() []string                     { return o.all }
+func (o *groupedSpeedTestOutbound) AttachConnection(io.Closer) func() { return func() {} }
 
 type speedTestOutboundManager struct {
 	adapter.OutboundManager
@@ -242,7 +244,7 @@ func TestValidateCompatibleSpeedTestOutbound(t *testing.T) {
 		httpOutbound := &typedSpeedTestOutbound{outboundType: C.TypeHTTP, tag: "http"}
 		group := &groupedSpeedTestOutbound{
 			typedSpeedTestOutbound: &typedSpeedTestOutbound{outboundType: C.TypeSelector, tag: "proxy"},
-			selected:               httpOutbound.Tag(),
+			selected:               httpOutbound,
 			all:                    []string{httpOutbound.Tag()},
 		}
 		manager := &speedTestOutboundManager{outbounds: map[string]adapter.Outbound{httpOutbound.Tag(): httpOutbound}}

@@ -86,7 +86,10 @@ func validateCompatibleSpeedTestOutbound(manager adapter.OutboundManager, select
 		if !isGroup {
 			break
 		}
-		selectedTag := group.Now()
+		var selectedTag string
+		if selectedOutbound := group.Selected(N.NetworkTCP); selectedOutbound != nil {
+			selectedTag = selectedOutbound.Tag()
+		}
 		if selectedTag == "" {
 			for _, candidateTag := range group.All() {
 				candidate, loaded := manager.Outbound(candidateTag)
