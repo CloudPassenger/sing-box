@@ -23,6 +23,7 @@ type HysteriaInboundOptions struct {
 	DisableMTUDiscovery bool `json:"disable_mtu_discovery,omitempty" schema:"omit"`
 	InboundTLSOptionsContainer
 	QUICOptions
+	InboundSpeedTestOptions
 }
 
 type HysteriaUser struct {

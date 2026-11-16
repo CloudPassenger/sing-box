@@ -16,7 +16,8 @@
   ],
   "tls": {},
   "multiplex": {},
-  "transport": {}
+  "transport": {},
+  "speed_test": "allow"
 }
 ```
 
@@ -52,3 +53,7 @@ See [Multiplex](/configuration/shared/multiplex#inbound) for details.
 #### transport
 
 V2Ray Transport configuration, see [V2Ray Transport](/configuration/shared/v2ray-transport/).
+
+#### speed_test
+
+See [Private Speed Test](/configuration/shared/private-speedtest/) for details.

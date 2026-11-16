@@ -20,7 +20,8 @@ icon: material/new-box
     }
   ],
   "padding_scheme": [],
-  "tls": {}
+  "tls": {},
+  "speed_test": "allow"
 }
 ```
 
@@ -59,3 +60,7 @@ Default padding scheme:
 #### tls
 
 TLS configuration, see [TLS](/configuration/shared/tls/#inbound).
+
+#### speed_test
+
+See [Private Speed Test](/configuration/shared/private-speedtest/) for details.

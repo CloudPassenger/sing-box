@@ -6,6 +6,7 @@ type VMessInboundOptions struct {
 	InboundTLSOptionsContainer
 	Multiplex *InboundMultiplexOptions `json:"multiplex,omitempty"`
 	Transport *V2RayTransportOptions   `json:"transport,omitempty"`
+	InboundSpeedTestOptions
 }
 
 type VMessUser struct {

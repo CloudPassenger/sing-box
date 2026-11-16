@@ -11,6 +11,7 @@ type TUICInboundOptions struct {
 	Heartbeat         badoption.Duration `json:"heartbeat,omitempty"`
 	InboundTLSOptionsContainer
 	QUICOptions
+	InboundSpeedTestOptions
 }
 
 type TUICUser struct {

@@ -20,6 +20,7 @@ type AbstractSnellInboundOptions struct {
 	ListenOptions
 	PSK   string      `json:"psk"`
 	Users []SnellUser `json:"users,omitempty"`
+	InboundSpeedTestOptions
 }
 
 type SnellInboundOptions _SnellInboundOptions

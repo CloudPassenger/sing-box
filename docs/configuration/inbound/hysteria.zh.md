@@ -22,6 +22,7 @@
   ],
 
   "tls": {},
+  "speed_test": "allow",
 
   ... // QUIC 字段
 
@@ -86,6 +87,10 @@ base64 编码的认证密码。
 ==必填==
 
 TLS 配置, 参阅 [TLS](/zh/configuration/shared/tls/#入站)。
+
+#### speed_test
+
+参阅 [私有测速](/zh/configuration/shared/private-speedtest/)。
 
 ### QUIC 字段
 
